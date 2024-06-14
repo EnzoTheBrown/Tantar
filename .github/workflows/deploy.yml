@@ -1,0 +1,43 @@
+name: Deploy to EC2
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v2
+
+    - name: Set up SSH
+      uses: webfactory/ssh-agent@v0.5.3
+      with:
+        ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
+
+    - name: Deploy to EC2
+      run: |
+        ssh -o StrictHostKeyChecking=no ec2-user@52.51.14.202 << 'EOF'
+        cd /home/ec2-user/tantar
+
+        # Pull the latest code from the main branch
+        git pull origin main
+
+        # Ensure Docker Compose is available
+        if ! command -v docker-compose &> /dev/null
+        then
+            sudo curl -L "https://github.com/docker/compose/releases/download/1.29.2/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
+            sudo chmod +x /usr/local/bin/docker-compose
+        fi
+
+        # Ensure Docker is running
+        sudo systemctl start docker
+
+        # Rebuild and restart the containers
+        sudo /usr/local/bin/docker-compose down
+        sudo /usr/local/bin/docker-compose build
+        sudo /usr/local/bin/docker-compose up -d
+        EOF
