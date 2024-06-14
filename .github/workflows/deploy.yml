@@ -21,7 +21,7 @@ jobs:
     - name: Deploy to EC2
       run: |
         ssh -o StrictHostKeyChecking=no ec2-user@52.51.14.202 << 'EOF'
-        cd /home/ec2-user/tantar
+        cd /home/ec2-user/Tantar
 
         # Pull the latest code from the main branch
         git pull origin main
