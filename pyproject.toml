@@ -1,0 +1,26 @@
+[tool.poetry]
+name = "tantar"
+version = "0.1.0"
+description = ""
+authors = ["Enzo Lebrun"]
+license = "MIT"
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.10"
+pypdf = "^4.2.0"
+pdf2image = "^1.17.0"
+pytesseract = "^0.3.10"
+opencv-python = "^4.9.0.80"
+numpy = "^1.26.4"
+openai = "0.28"
+uvicorn = "^0.30.1"
+pydantic = "^2.7.3"
+fastapi = "^0.111.0"
+jwt = "^1.3.1"
+surya-ocr = "^0.4.12"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
