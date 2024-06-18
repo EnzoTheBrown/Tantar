@@ -29,3 +29,11 @@ services:
       - "traefik.http.services.fastapi.loadbalancer.server.port=8000"
     restart: always
 
+  postgres:
+    image: postgres:13
+    environment:
+      POSTGRES_USER: tantar
+      POSTGRES_PASSWORD: tantar
+      POSTGRES_DB: tantar
+    restart: always
+

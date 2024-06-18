@@ -17,8 +17,9 @@ class FileUpload(BaseModel):
     file_name: str
     file_content: str
 
-@app.post("/upload/")
-async def upload_file(file: FileUpload):
+
+@app.post("/upload")
+def upload_file(file: FileUpload):
     try:
         # Decode the base64 file content
         file_data = base64.b64decode(file.file_content)
@@ -38,6 +39,7 @@ async def upload_file(file: FileUpload):
         raise HTTPException(status_code=403, detail="Invalid AWS credentials")
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
 
 if __name__ == "__main__":
     import uvicorn
