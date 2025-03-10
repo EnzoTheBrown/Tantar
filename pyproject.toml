@@ -1,0 +1,58 @@
+[project]
+name = "tantar"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "fastapi>=0.115.6",
+    "httpx>=0.28.1",
+    "passlib>=1.7.4",
+    "pydantic[email]>=2.10.4",
+    "sqlalchemy>=2.0.36",
+    "uvicorn>=0.34.0",
+    "pytest>=8.3.4",
+    "toml>=0.10.2",
+    "python-dotenv>=1.0.1",
+    "boto3>=1.35.90",
+    "logfire[fastapi,sqlalchemy]>=2.11.0",
+    "python-multipart>=0.0.20",
+    "langchain-core>=0.3.28",
+    "langchain-chroma>=0.1.4",
+    "langchain-openai>=0.2.14",
+    "pyjwt>=2.10.1",
+    "alembic>=1.14.0",
+    "pydantic-ai>=0.0.20",
+    "sqlmodel>=0.0.22",
+    "lancedb>=0.20.0",
+]
+
+[dependency-groups]
+test = [
+    "pytest>=8.3.4",
+]
+lint = [
+    "ruff>=0.8.4",
+]
+migrations = [
+    "alembic>=1.14.0",
+]
+dev = [
+    "ipython>=8.31.0",
+    "jupyter>=1.1.1",
+    "mocker>=1.1.1",
+    "notebook>=7.3.2",
+    "pytest-asyncio>=0.25.2",
+    "pytest-mock>=3.14.0",
+]
+
+[project.scripts]
+scheduler = "services.scheduler:main"
+
+[tool.logfire]
+pydantic_plugin_record = "all"
+
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
+
