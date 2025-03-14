@@ -217,14 +217,26 @@ class SerFileAPIModel(BaseModel):
 """
 
 
-class PhysicalPerson(BaseModel):
+class PhysicalPersonModel(BaseModel):
     firstname: str = Field(description="firstname")
     lastname: str = Field(description="lastname")
-    role: str = Field(description="The role of the physical person")
 
 
-class MoralPerson(BaseModel):
+class MoralPersonModel(BaseModel):
     name: str = Field(description="The name of the moral person")
+
+
+class PhysicalPerson(BaseSQLModel, table=True):
+    firstname: str
+    lastname: str
+
+    @property
+    def name(self):
+        return f"{self.firstname} {self.lastname}"
+
+
+class MoralPerson(BaseSQLModel, table=True):
+    name: str
 
 
 """
@@ -235,9 +247,6 @@ class MoralPerson(BaseModel):
 class Event(FileChunk):
     label: JuridicCategory = Field(
         description="The category of the event", default=JuridicCategory.AUTRE
-    )
-    type: EventType = Field(
-        description="The type of the event", default=EventType.DEMANDE_DE_PRET_BANCAIRE
     )
     text: str = Field(description="Full text describing the event")
     title: str = Field(description="Short text explaining the event", title=None)
@@ -252,6 +261,14 @@ class Event(FileChunk):
     @property
     def name(self):
         return self.title
+
+
+class JuridicEventClass(BaseModel):
+    type: EventType = Field(description="The type of the event")
+
+
+class ClassifiedJuridicEvent(Event):
+    type: EventType = Field(description="The type of the event")
 
 
 class JuridicEvents(BaseModel):
@@ -306,8 +323,8 @@ class EventCategoriesAPIModel(BaseModel):
 class Contract(BaseModel):
     type: ContractType = Field(description="The type of the contract")
     title: str = Field(description="The title of the contract")
-    offeror: Union[PhysicalPerson, MoralPerson] = Field(description="The offeror")
-    offeree: Union[PhysicalPerson, MoralPerson] = Field(description="The offeree")
+    offeror: PhysicalPerson | MoralPerson = Field(description="The offeror")
+    offeree: MoralPerson = Field(description="The offeree")
 
 
 class ContractChunkInput(BaseModel):

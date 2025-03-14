@@ -2,19 +2,21 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>D3.js Directed Graph with Link Labels</title>
+  <title>Improved D3.js Directed Graph</title>
   <style>
     .link {
-      stroke: #999;
-      stroke-opacity: 0.6;
+      stroke: #666;
+      stroke-opacity: 0.8;
       stroke-width: 2px;
     }
     .node text {
       pointer-events: none;
+      font-size: 18px;
     }
     .link-label {
-      font: 10px sans-serif;
-      fill: #555;
+      font: 12px sans-serif;
+      fill: #333;
+      font-weight: bold;
       pointer-events: none;
     }
   </style>
@@ -35,30 +37,29 @@
       .enter().append("marker")
         .attr("id", "arrowhead")
         .attr("viewBox", "-0 -5 10 10")
-        .attr("refX", 30) // adjust this value based on your node size
+        .attr("refX", 30)
         .attr("refY", 0)
         .attr("orient", "auto")
-        .attr("markerWidth", 6)
-        .attr("markerHeight", 6)
+        .attr("markerWidth", 8)
+        .attr("markerHeight", 8)
         .attr("xoverflow", "visible")
       .append("svg:path")
         .attr("d", "M 0,-5 L 10,0 L 0,5")
-        .attr("fill", "#999")
+        .attr("fill", "#666")
         .style("stroke", "none");
 
-    // Define icon mapping for node labels
+    // Icon mapping for node labels
     const iconMapping = {
       "File": "📄",
       "Company": "🏢",
-      "EventInput": "📅"
+      "EventInput": "✅",
+      "Contract": "🤝"
     };
 
     // Fetch graph data from your API endpoint
     d3.json("http://127.0.0.1:8000/graph").then(graphData => {
-      // Create a lookup for nodes by id
       const nodeById = new Map(graphData.nodes.map(d => [d.id, d]));
 
-      // Map edges to proper node objects for source and target
       const links = graphData.edges.map(d => ({
         source: nodeById.get(d.source_id),
         target: nodeById.get(d.target_id),
@@ -68,10 +69,9 @@
 
       const nodes = graphData.nodes;
 
-      // Initialize force simulation
       const simulation = d3.forceSimulation(nodes)
-        .force("link", d3.forceLink(links).id(d => d.id).distance(150))
-        .force("charge", d3.forceManyBody().strength(-300))
+        .force("link", d3.forceLink(links).id(d => d.id).distance(170))
+        .force("charge", d3.forceManyBody().strength(-350))
         .force("center", d3.forceCenter(width / 2, height / 2));
 
       // Draw links with arrow markers
@@ -90,10 +90,10 @@
         .data(links)
         .enter().append("text")
           .attr("class", "link-label")
-          .attr("dy", -5)
+          .attr("dy", -10)
           .text(d => d.label);
 
-      // Draw nodes as groups (g) containing a circle and an icon
+      // Draw nodes
       const node = svg.append("g")
           .attr("class", "nodes")
         .selectAll("g")
@@ -101,25 +101,25 @@
         .enter().append("g")
           .call(drag(simulation));
 
-      // Append white circle with black edges
+      // Node circles
       node.append("circle")
-        .attr("r", 20)
+        .attr("r", 25)
         .attr("fill", "white")
         .attr("stroke", "black")
         .attr("stroke-width", 1.5);
 
-      // Append icon text in the center of the circle
+      // Icon labels inside nodes
       node.append("text")
         .attr("text-anchor", "middle")
         .attr("alignment-baseline", "middle")
-        .attr("font-size", 16)
+        .attr("font-size", 20)
         .text(d => iconMapping[d.label] || d.label);
 
-      // Tooltip to show the full node name
+      // Tooltip for full node name
       node.append("title")
         .text(d => d.name);
 
-      // Update positions on each tick of the simulation
+      // Update positions on each tick
       simulation.on("tick", () => {
         link
           .attr("x1", d => d.source.x)
@@ -127,15 +127,13 @@
           .attr("x2", d => d.target.x)
           .attr("y2", d => d.target.y);
 
-        // Update node positions
         node.attr("transform", d => `translate(${d.x},${d.y})`);
 
-        // Position link labels at the midpoints of links
         linkLabels.attr("x", d => (d.source.x + d.target.x) / 2)
                   .attr("y", d => (d.source.y + d.target.y) / 2);
       });
 
-      // Drag functionality for nodes
+      // Drag functionality
       function drag(simulation) {
         function dragstarted(event, d) {
           if (!event.active) simulation.alphaTarget(0.3).restart();

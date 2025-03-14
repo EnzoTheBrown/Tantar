@@ -1,16 +1,12 @@
 from schemas.model import (
     VectorEvent,
-    ContractChunk,
-    Event,
-    EventInput,
     File,
     ContractType,
     EventType,
 )
 from sqlmodel import select
-from tantar.graph import create_node, create_edge, get_node
+from tantar.graph import create_edge
 from tantar.vector_database import (
-    get_events_in_vector_db,
     get_contract_chunks_in_vector_db,
 )
 from datetime import datetime, timedelta
@@ -29,7 +25,7 @@ def convert_datetime_to_date_string(date: datetime):
     return date.strftime("%Y-%m-%d")
 
 
-def link_contract_authorization_event(db, event: VectorEvent):
+def link_contract_authorization_event_transfert_de_siege_social(db, event: VectorEvent):
     assert event.type == EventType.TRANSFERT_DE_SIEGE_SOCIAL, (
         'Event must be of type "TRANSFERT_DE_SIEGE_SOCIAL"'
     )
@@ -54,7 +50,7 @@ def link_contract_authorization_event(db, event: VectorEvent):
     ).first()
 
     logger.info(
-        "Linking contract to event",
+        "Finding a link between an event and a contract of type BAIL",
         extra={
             "file_id": file.id,
             "event_id": event.original_id,
@@ -94,7 +90,7 @@ def link_contract_authorization_event_demande_pret_bancaire(db, event: VectorEve
     ).first()
 
     logger.info(
-        "Linking contract to event",
+        "Finding a link between an event and a contract of type DEMANDE_DE_PRET_BANCAIRE",
         extra={
             "file_id": file.id,
             "event_id": event.original_id,
@@ -103,7 +99,7 @@ def link_contract_authorization_event_demande_pret_bancaire(db, event: VectorEve
     )
     create_edge(
         db,
-        source=file,
-        target=event,
+        target=file,
+        source=event,
         label="HAS_AUTHORIZED",
     )

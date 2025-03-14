@@ -1,7 +1,6 @@
 from datetime import datetime
 from schemas.model import JuridicEvents, Event
 from typing import List
-from pydantic import BaseModel, Field
 from enum import Enum
 from datetime import datetime
 
@@ -20,16 +19,6 @@ extract_file_information_template = """
 Please extract the given information from this juridic document
 {format_instructions}
 """
-
-
-class PhysicalPerson(BaseModel):
-    firstname: str = Field(description="firstname")
-    lastname: str = Field(description="lastname")
-    role: str = Field(description="The role of the physical person")
-
-
-class MoralPerson(BaseModel):
-    name: str = Field(description="The name of the moral person")
 
 
 class EventType(Enum):

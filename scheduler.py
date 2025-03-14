@@ -180,6 +180,15 @@ async def process_file(db, file):
         elif document.metadata.type == FileType.CONTRACT:
             create_edge(db, file.company, file, FileType.CONTRACT)
             contract = document.additional_data
+            logger.info(f"Adding new contract {contract}")
+            db.add(contract.offeror)
+            db.commit()
+            db.add(contract.offeree)
+            db.commit()
+            create_node(db, contract.offeror)
+            create_node(db, contract.offeree)
+            create_edge(db, file, contract.offeror, "HAS_OFFEROR")
+            create_edge(db, file, contract.offeree, "HAS_OFFEREE")
             if contract is None:
                 raise ValueError("Contract not found")
             for chunk in document.file_chunks:
