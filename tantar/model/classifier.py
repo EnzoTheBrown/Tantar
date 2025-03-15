@@ -1,40 +1,30 @@
 from pydantic_ai import Agent
 from pydantic_ai.messages import UserPromptPart, ModelRequest, SystemPromptPart
-from enum import Enum
 from typing import List
-from schemas.model import (
-    FileMetadata,
-    Contract,
-    Event,
-    ClassifiedJuridicEvent,
-    JuridicEventClass,
-)
+from schemas.model import Event
+from schemas.file_model import EventTypeModel, ContractTypeModel, FileTypeModel, ContractType, FileType
 from datetime import datetime
 
-
-class FileType(str, Enum):
-    CONTRACT = "CONTRACT"
-    PVAG = "Process Verbal Assemblée Générale"
 
 
 file_classifier_agent = Agent(
     "openai:gpt-4o",
-    result_type=FileMetadata,
+    result_type=FileTypeModel,
 )
 
 contract_classifier_agent = Agent(
     "openai:gpt-4o",
-    result_type=Contract,
+    result_type=ContractTypeModel,
 )
 
 
 event_classifier_agent = Agent(
     "openai:gpt-4o",
-    result_type=JuridicEventClass,
+    result_type=EventTypeModel,
 )
 
 
-async def classify_file(pages: List[str]) -> FileMetadata:
+async def classify_file(pages: List[str]) -> FileType:
     history = [
         ModelRequest(
             parts=[
@@ -56,10 +46,10 @@ async def classify_file(pages: List[str]) -> FileMetadata:
         )
     ]
     result = await file_classifier_agent.run("END", message_history=history)
-    return result.data
+    return result.data.type
 
 
-async def classify_contract(pages: List[str]) -> Contract:
+async def classify_contract(pages: List[str]) -> ContractType:
     history = [
         ModelRequest(
             parts=[
@@ -81,12 +71,11 @@ async def classify_contract(pages: List[str]) -> Contract:
         )
     ]
     result = await contract_classifier_agent.run("END", message_history=history)
-    return result.data
+    return result.data.type
 
 
-async def classify_juridic_event(event: Event) -> ClassifiedJuridicEvent:
+async def classify_juridic_event(event: Event) -> EventTypeModel:
     result = await event_classifier_agent.run(
         f'Classify the event "{event.title}" "{event.text}"'
     )
-    juridic_event_class = result.data.type
-    return ClassifiedJuridicEvent(type=juridic_event_class, **event.model_dump())
+    return result.data

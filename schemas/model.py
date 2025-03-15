@@ -5,41 +5,10 @@ from typing import List, Optional, Union, Annotated
 from sqlmodel import Field, SQLModel, Relationship
 from datetime import datetime
 import uuid
-from enum import Enum
+from schemas.file_model import FileType, JuridicCategory, EventType, ContractType
 
 embedder = get_registry().get("openai").create()
 VectorType = Vector(embedder.ndims())
-
-
-class JuridicCategory(str, Enum):
-    CARACTERISTIQUES_DE_LA_SOCIETE = "Caractéristiques de la société"
-    MODIFICATIONS_STATUTAIRES = "Modifications statutaires"
-    CAPITAL = "Capital"
-    CAPITAUX_PROPRES = "Capitaux propres"
-    COMPTES_ANNUELS = "Comptes annuels"
-    FONDS_DE_COMMERCE = "Fonds de commerce"
-    ASSOCIES = "Associés"
-    AUTORISATIONS_DIVERSES = "Autorisations diverses"
-    DIRIGEANTS = "Dirigeants"
-    CONTROLE_DE_LA_SOCIETE = "Contrôle de la société"
-    TITRES = "Titres"
-    DISTRIBUTIONS = "Distributions"
-    RESTRUCTURATION = "Restructuration"
-    DISSOLUTION = "Dissolution"
-    AUTRE = "Autre"
-
-
-class EventType(str, Enum):
-    TRANSFERT_DE_SIEGE_SOCIAL = "Transfert de siège social"
-    DEMANDE_DE_PRET_BANCAIRE = "Demande de prêt bancaire"
-    EMISSION_DE_TITRES = "Emission de titres"
-    AUTRE = "Autre"
-
-
-class ContractType(str, Enum):
-    BAIL = "Bail"
-    PRET_BANCAIRE = "Prêt bancaire"
-    AUTRE = "Autre"
 
 
 class BaseModel(BaseModel):
@@ -153,11 +122,6 @@ class FileChunk(BaseModel):
     page_number: int
 
 
-class FileType(str, Enum):
-    CONTRACT = "CONTRACT"
-    PVAG = "Process Verbal Assemblée Générale"
-
-
 def format_siren(siren: str):
     siren = siren.replace(" ", "")
     if len(siren) != 9:
@@ -210,6 +174,7 @@ class SerFileAPIModel(BaseModel):
     s3_path: str
     status: int
     company: Optional[CompanyAPIModel] = None
+    type: Optional[FileType] = None
 
 
 """
@@ -245,9 +210,6 @@ class MoralPerson(BaseSQLModel, table=True):
 
 
 class Event(FileChunk):
-    label: JuridicCategory = Field(
-        description="The category of the event", default=JuridicCategory.AUTRE
-    )
     text: str = Field(description="Full text describing the event")
     title: str = Field(description="Short text explaining the event", title=None)
     physical_persons: List[PhysicalPerson] = Field(
@@ -256,23 +218,15 @@ class Event(FileChunk):
     moral_persons: List[MoralPerson] = Field(
         description="The list of moral persons", default=[]
     )
-    page_number: int = Field(description="The index of the page of the event")
 
     @property
     def name(self):
         return self.title
 
 
-class JuridicEventClass(BaseModel):
-    type: EventType = Field(description="The type of the event")
-
-
 class ClassifiedJuridicEvent(Event):
     type: EventType = Field(description="The type of the event")
-
-
-class JuridicEvents(BaseModel):
-    juridic_events: List[Event] = Field(description="list of events")
+    juridic_category: JuridicCategory = Field(description="The category of the event")
 
 
 class EventInput(BaseModel):

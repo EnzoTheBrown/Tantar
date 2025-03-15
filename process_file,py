@@ -1,0 +1,1 @@
+from tantar.model.classifier import classify_file

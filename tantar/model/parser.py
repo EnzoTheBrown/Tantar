@@ -1,7 +1,6 @@
 from datetime import datetime
-from schemas.model import JuridicEvents, Event
+from schemas.model import JuridicEvents, Event, FileMetadata
 from typing import List
-from enum import Enum
 from datetime import datetime
 
 from pydantic_ai import Agent
@@ -15,21 +14,41 @@ Only extract the "Décisions" or the "Résolutions" the paragraph should start w
 """
 
 
-extract_file_information_template = """
-Please extract the given information from this juridic document
-{format_instructions}
-"""
-
-
-class EventType(Enum):
-    DECISION = "Décision"
-    RESOLUTION = "Résolution"
-
-
 events_agent = Agent(
     "openai:gpt-4o",
     result_type=JuridicEvents,
 )
+
+document_information_agent = Agent(
+    "openai:gpt-4o",
+    result_type=FileMetadata,
+)
+
+
+async def extract_document_metadata(pages: List[str]) -> FileMetadata:
+    history = [
+        ModelRequest(
+            parts=[
+                SystemPromptPart(
+                    content='Extract the document information',
+                    dynamic_ref=None,
+                    part_kind="system-prompt",
+                ),
+            ]
+            + [
+                UserPromptPart(
+                    content=page,
+                    timestamp=datetime.now(),
+                    part_kind="user-prompt",
+                )
+                for page in pages[:2]
+            ],
+            kind="request",
+        )
+    ]
+    message = await document_information_agent.run("END", message_history=history)
+    return message.data
+
 
 
 async def extract_events(pages: List[str]) -> List[Event]:
