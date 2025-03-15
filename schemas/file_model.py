@@ -3,13 +3,13 @@ from pydantic import BaseModel, Field
 
 
 class FileType(str, Enum):
-    CONTRAT = 'CONTRAT'
+    CONTRAT = "CONTRAT"
     PROCES_VERBAL_D_ASSEMBLEE_GENERALE = "Proces verbal d'assemblee generale"
-    REGISTRE_DE_MOUVEMENT_DE_TITRES = 'Registre de mouvement de titres'
+    REGISTRE_DE_MOUVEMENT_DE_TITRES = "Registre de mouvement de titres"
 
 
 class FileTypeModel(BaseModel):
-    file_type: FileType = Field(..., title="Type de fichier")
+    type: FileType = Field(..., title="Type de fichier")
 
 
 class JuridicCategory(str, Enum):
@@ -32,18 +32,30 @@ class JuridicCategory(str, Enum):
 
 class EventType(str, Enum):
     TRANSFERT_DE_SIEGE_SOCIAL = "Transfert de siège social"
-    AUTORISATION_DE_SOUSCRIPTION_A_UN_PRET_BANCAIRE = "Autorisation de souscription à un prêt bancaire"
-    AUTORISATION_D_ACQUISITION_D_UN_IMMEUBLE = "Autorisation d'acquisition d'un immeuble"
+    AUTORISATION_DE_SOUSCRIPTION_A_UN_PRET_BANCAIRE = (
+        "Autorisation de souscription à un prêt bancaire"
+    )
+    AUTORISATION_D_ACQUISITION_D_UN_IMMEUBLE = (
+        "Autorisation d'acquisition d'un immeuble"
+    )
     AUTORISATION_DE_CESSION_D_UN_IMMEUBLE = "Autorisation de cession d'un immeuble"
-    AUTORISATION_DE_CESSION_D_UN_FONDS_DE_COMMERCE = "Autorisation de cession d'un fonds de commerce"
+    AUTORISATION_DE_CESSION_D_UN_FONDS_DE_COMMERCE = (
+        "Autorisation de cession d'un fonds de commerce"
+    )
     AUTOSISATION_DE_PRISE_DE_PARTICIPATION = "Autorisation de prise de participation"
     AUTORISATION_DE_CESSION_D_ACTIONS = "Autorisation de cession d'actions"
     DECISION_D_EMISSION_D_OBLIGATIONS = "Décision d'émission d'obligations"
-    DECISION_D_ATTRIBUTION_D_ACTION_GRATUITE = "Décision d'attribution d'action gratuite"
-    AUTORISATION_DE_NANTISSEMENT_D_ACTIONS_OU_DE_PARTS = "Autorisation de nantissement d'actions ou de parts"
+    DECISION_D_ATTRIBUTION_D_ACTION_GRATUITE = (
+        "Décision d'attribution d'action gratuite"
+    )
+    AUTORISATION_DE_NANTISSEMENT_D_ACTIONS_OU_DE_PARTS = (
+        "Autorisation de nantissement d'actions ou de parts"
+    )
     AUTOSISATION_DE_CESSION_DE_MARQUE = "Autorisation de cession de marque"
     AUTORISATION_D_ACQUISITION_DE_MARQUE = "Autorisation d'acquisition de marque"
-    DECISION_D_APPROBATION_DES_CONVENTIONS_REGLEMENTEES = "Décision d'approbation des conventions réglementées"
+    DECISION_D_APPROBATION_DES_CONVENTIONS_REGLEMENTEES = (
+        "Décision d'approbation des conventions réglementées"
+    )
     AUTRE = "Autre"
 
 
@@ -53,7 +65,8 @@ class EventTypeModel(BaseModel):
 
 
 class ContractType(str, Enum):
-    """ Transfert de siège social """
+    """Transfert de siège social"""
+
     BAIL = "Bail"
     MISE_A_DISPOSITION_DE_LOCAL = "Mise à disposition de local"
     DOMICILIATION = "Domiciliation"
@@ -72,19 +85,25 @@ class ContractType(str, Enum):
     BON_DE_SOUSCRIPTION_D_ACTION = "Bon de souscription d'action"
     ACTE_DE_CESSION_D_ACTION = "Acte de cessation d'action"
     BULLETIN_DE_SOUSCRIPTION = "Bulletin de souscription"
-    PV_DE_CONSTATATION_D_AUGMENTATION_DE_CAPITAL = "PV de constatation d'augmentation de capital"
+    PV_DE_CONSTATATION_D_AUGMENTATION_DE_CAPITAL = (
+        "PV de constatation d'augmentation de capital"
+    )
     PROTOCOL_DE_CESSION = "Protocole de cession"
     FORMULAIRE_2759 = "Formulaire 2759"
     ORDRE_DE_MOUVEMENT_DE_TITRES = "Ordre de mouvement de titres"
     CONTRAT_D_EMISSION_D_OBLIGATIONS = "Contrat d'émission d'obligations"
     PLAN_D_ATTRIBUTION_D_ACTION_GRATUITE = "Plan d'attribution d'action gratuite"
-    ETAT_DES_INSCRIPTIONS_DES_PRIVILEGES_ET_NANTISSEMENTS = "Etat des inscriptions des privilèges et nantissements"
+    ETAT_DES_INSCRIPTIONS_DES_PRIVILEGES_ET_NANTISSEMENTS = (
+        "Etat des inscriptions des privilèges et nantissements"
+    )
 
     """ Cession de marque """
     ACTE_DE_CESSION_DE_MARQUE = "Acte de cession de marque"
 
     """ Conventions réglementées """
-    RAPPORT_SPECIAL_DU_COMMISSAIRE_AU_COMPTES = "Rapport spécial du commissaire aux comptes"
+    RAPPORT_SPECIAL_DU_COMMISSAIRE_AU_COMPTES = (
+        "Rapport spécial du commissaire aux comptes"
+    )
 
     """ Autre """
     AUTRE = "Autre"
@@ -92,4 +111,3 @@ class ContractType(str, Enum):
 
 class ContractTypeModel(BaseModel):
     contract_type: ContractType = Field(..., title="Type de contrat")
-

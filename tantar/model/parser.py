@@ -30,7 +30,7 @@ async def extract_document_metadata(pages: List[str]) -> FileMetadata:
         ModelRequest(
             parts=[
                 SystemPromptPart(
-                    content='Extract the document information',
+                    content="Extract the document information",
                     dynamic_ref=None,
                     part_kind="system-prompt",
                 ),
@@ -48,7 +48,6 @@ async def extract_document_metadata(pages: List[str]) -> FileMetadata:
     ]
     message = await document_information_agent.run("END", message_history=history)
     return message.data
-
 
 
 async def extract_events(pages: List[str]) -> List[Event]:
@@ -73,4 +72,4 @@ async def extract_events(pages: List[str]) -> List[Event]:
         )
     ]
     message = await events_agent.run("END", message_history=history)
-    return message.data.juridic_events
+    return message.data.events

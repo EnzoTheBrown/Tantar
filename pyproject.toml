@@ -29,6 +29,7 @@ dependencies = [
 
 [dependency-groups]
 test = [
+    "pdf2image>=1.17.0",
     "pytest>=8.3.4",
 ]
 lint = [
@@ -44,6 +45,10 @@ dev = [
     "notebook>=7.3.2",
     "pytest-asyncio>=0.25.2",
     "pytest-mock>=3.14.0",
+]
+tests = [
+    "pypdf2>=3.0.1",
+    "pytest-asyncio>=0.25.3",
 ]
 
 [project.scripts]

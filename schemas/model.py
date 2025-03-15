@@ -130,8 +130,8 @@ def format_siren(siren: str):
 
 
 class FileMetadata(BaseModel):
-    title: str = Field(description="The title of the file")
-    type: FileType = Field(description="The type of the file")
+    title: str = Field(description="Le titre du document")
+    type: FileType = Field(description="Le type de document")
     siren: Annotated[Optional[str], BeforeValidator(format_siren)] = Field(
         description="The siren of the company", default=None
     )
@@ -218,10 +218,17 @@ class Event(FileChunk):
     moral_persons: List[MoralPerson] = Field(
         description="The list of moral persons", default=[]
     )
+    page_number: int = Field(description="The index of the page in the file")
+    type: EventType = Field(description="The type of the event")
+    label: JuridicCategory = Field(description="The category of the event")
 
     @property
     def name(self):
         return self.title
+
+
+class JuridicEvents(BaseModel):
+    events: List[Event] = Field(description="The list of juridic events")
 
 
 class ClassifiedJuridicEvent(Event):

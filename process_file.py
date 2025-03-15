@@ -1,4 +1,8 @@
-from tantar.model.classifier import classify_file, classify_contract, classify_juridic_event
+from tantar.model.classifier import (
+    classify_file,
+    classify_contract,
+    classify_juridic_event,
+)
 from schemas.model import File, Event, ClassifiedJuridicEvent, EventInput, FileMetadata
 from schemas.file_model import FileType, ContractType, EventType
 from sqlmodel import select
@@ -29,12 +33,13 @@ def set_file_status(db, file, status):
     db.refresh(file)
 
 
-async def handle_contract(file: File, text_pages: List[str], file_metadata: FileMetadata):
+async def handle_contract(
+    file: File, text_pages: List[str], file_metadata: FileMetadata
+):
     await classify_contract(text_pages)
 
 
 async def handle_event(file: File, event: Event, file_metadata: FileMetadata):
-    event_type = await classify_juridic_event(event)
     event_input = EventInput(
         original_id=str(uuid.uuid4()),
         account_id=file.account.original_id,
@@ -43,8 +48,8 @@ async def handle_event(file: File, event: Event, file_metadata: FileMetadata):
         date=file_metadata.date.strftime("%Y-%m-%d"),
         text=event.text,
         title=event.title,
-        label=event_type.juridic_category,
-        type=event_type.event_type,
+        label=event.label,
+        type=event.type,
         page_index=event.page_number,
         file_name=file.name,
         siren=file.account.siren,
@@ -56,7 +61,6 @@ async def handle_pv_ag(file: File, text_pages: List[str], file_metadata: FileMet
     events = await extract_events(text_pages)
     for event in events:
         await handle_event(file, event, file_metadata)
-
 
 
 async def process_file(db, file: File):

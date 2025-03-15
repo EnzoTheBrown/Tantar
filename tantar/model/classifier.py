@@ -2,24 +2,29 @@ from pydantic_ai import Agent
 from pydantic_ai.messages import UserPromptPart, ModelRequest, SystemPromptPart
 from typing import List
 from schemas.model import Event
-from schemas.file_model import EventTypeModel, ContractTypeModel, FileTypeModel, ContractType, FileType
+from schemas.file_model import (
+    EventTypeModel,
+    ContractTypeModel,
+    FileTypeModel,
+    ContractType,
+    FileType,
+)
 from datetime import datetime
 
 
-
 file_classifier_agent = Agent(
-    "openai:gpt-4o",
+    "mistral:mistral-large-latest",
     result_type=FileTypeModel,
 )
 
 contract_classifier_agent = Agent(
-    "openai:gpt-4o",
+    "mistral:mistral-large-latest",
     result_type=ContractTypeModel,
 )
 
 
 event_classifier_agent = Agent(
-    "openai:gpt-4o",
+    "mistral:mistral-large-latest",
     result_type=EventTypeModel,
 )
 
