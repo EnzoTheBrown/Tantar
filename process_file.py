@@ -3,7 +3,7 @@ from tantar.model.classifier import (
     classify_contract,
     classify_juridic_event,
 )
-from schemas.model import File, Event, ClassifiedJuridicEvent, EventInput, FileMetadata
+from schemas.model import File, Event, ClassifiedJuridicEvent, EventInput, FileMetadata, ContractChunkInput
 from schemas.file_model import FileType, ContractType, EventType
 from sqlmodel import select
 from tantar.utils.logger import get_logger
@@ -12,10 +12,11 @@ from tantar.pdf_to_image import pdf2images
 from tantar.settings import SETTINGS
 from tantar.model.ocr import get_blocks, get_page_plane_text
 from tantar.model.parser import extract_events, extract_document_metadata
-from tantar.vector_database import post_event
+from tantar.vector_database import post_event, post_contract_chunk
+from tantar.model.tokenizer import tokenize_paragraphs
 import uuid
 
-from typing import List
+from typing import List, Any
 
 s3 = SETTINGS.s3.client
 
@@ -34,9 +35,24 @@ def set_file_status(db, file, status):
 
 
 async def handle_contract(
-    file: File, text_pages: List[str], file_metadata: FileMetadata
+    file: File, text_pages: List[str], text_blocks: Any, file_metadata: FileMetadata
 ):
     await classify_contract(text_pages)
+    paragraphs = tokenize_paragraphs(text_blocks)
+    for paragraph in paragraphs:
+        contract_chunk = ContractChunkInput(
+            original_id=str(uuid.uuid4()),
+            account_id=file.account.original_id,
+            company_id=file.company.original_id,
+            file_id=file.original_id,
+            date=file_metadata.date.strftime("%Y-%m-%d"),
+            text=paragraph.text,
+            title=paragraph.title,
+            page_index=paragraph.page_number,
+            file_name=file.name,
+            siren=file.account.siren,
+        )
+        post_contract_chunk(contract_chunk)
 
 
 async def handle_event(file: File, event: Event, file_metadata: FileMetadata):
@@ -52,7 +68,7 @@ async def handle_event(file: File, event: Event, file_metadata: FileMetadata):
         type=event.type,
         page_index=event.page_number,
         file_name=file.name,
-        siren=file.account.siren,
+        siren=file.company.siren,
     )
     post_event(event_input)
 
@@ -65,9 +81,17 @@ async def handle_pv_ag(file: File, text_pages: List[str], file_metadata: FileMet
 
 async def process_file(db, file: File):
     set_file_status(db, file, state.PROCESSING)
-    key = file.s3_path
-    images = pdf2images(key, company_id="images")
+    images = get_images_from_file(file)
+    await process_images(file, images)
+    set_file_status(db, file, state.PROCESSED)
 
+
+def get_images_from_file(file: File):
+    key = file.s3_path
+    return pdf2images(key, company_id="images")
+
+
+async def process_images(file: File, images: Any):
     image_bytes = [
         s3.get_object(Bucket="tantar", Key=image["image_name"])["Body"].read()
         for image in images
@@ -78,9 +102,13 @@ async def process_file(db, file: File):
     file_metadata = await extract_document_metadata(text_pages)
 
     match file_metadata.type:
-        case FileType.CONTRACT:
-            await handle_contract(file, text_pages, file_metadata)
+        case FileType.CONTRAT:
+            await handle_contract(file, text_pages, text_blocks, file_metadata)
         case FileType.PROCES_VERBAL_D_ASSEMBLEE_GENERALE:
             await handle_pv_ag(file, text_pages, file_metadata)
         case _:
             raise ValueError(f"Unsupported file type {file_metadata.type}")
+
+
+async def update_links():
+    pass
