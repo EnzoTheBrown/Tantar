@@ -3,7 +3,20 @@ from tantar.model.classifier import (
     classify_contract,
     classify_juridic_event,
 )
-from schemas.model import File, Event, ClassifiedJuridicEvent, EventInput, FileMetadata, ContractChunkInput
+from schemas.model import (
+    Company,
+    File,
+    Event,
+    ClassifiedJuridicEvent,
+    EventInput,
+    FileMetadata,
+    ContractChunkInput,
+    EventDBModel,
+    ContractDBModel,
+    EdgeLabel,
+    NodeType,
+)
+from tantar.graph import create_node, create_edge
 from schemas.file_model import FileType, ContractType, EventType
 from sqlmodel import select
 from tantar.utils.logger import get_logger
@@ -12,8 +25,13 @@ from tantar.pdf_to_image import pdf2images
 from tantar.settings import SETTINGS
 from tantar.model.ocr import get_blocks, get_page_plane_text
 from tantar.model.parser import extract_events, extract_document_metadata
-from tantar.vector_database import post_event, post_contract_chunk
+from tantar.vector_database import (
+    post_event,
+    post_contract_chunk,
+    get_contract_chunks_in_vector_db,
+)
 from tantar.model.tokenizer import tokenize_paragraphs
+
 import uuid
 
 from typing import List, Any
@@ -35,9 +53,16 @@ def set_file_status(db, file, status):
 
 
 async def handle_contract(
-    file: File, text_pages: List[str], text_blocks: Any, file_metadata: FileMetadata
+    db, file: File, text_pages: List[str], text_blocks: Any, file_metadata: FileMetadata
 ):
-    await classify_contract(text_pages)
+    contract_type = await classify_contract(text_pages)
+    contract_db = ContractDBModel(
+        title=file_metadata.title,
+        type=contract_type,
+        file=file,
+    )
+    db.add(contract_db)
+    db.commit()
     paragraphs = tokenize_paragraphs(text_blocks)
     for paragraph in paragraphs:
         contract_chunk = ContractChunkInput(
@@ -47,15 +72,29 @@ async def handle_contract(
             file_id=file.original_id,
             date=file_metadata.date.strftime("%Y-%m-%d"),
             text=paragraph.text,
-            title=paragraph.title,
+            title=file_metadata.title,
             page_index=paragraph.page_number,
             file_name=file.name,
-            siren=file.account.siren,
+            siren=file.company.siren,
+            type=contract_type,
         )
+        logger.info(f"posting contract chunk {contract_chunk}")
         post_contract_chunk(contract_chunk)
 
 
-async def handle_event(file: File, event: Event, file_metadata: FileMetadata):
+async def handle_event(db, file: File, event: Event, file_metadata: FileMetadata):
+    event_db = EventDBModel(
+        text=event.text,
+        title=event.title,
+        page_number=event.page_number,
+        type=event.type,
+        label=event.label,
+        file=file,
+    )
+    db.add(event_db)
+    db.commit()
+    create_node(db, event_db, NodeType.EVENT)
+    create_edge(db, file, event_db, EdgeLabel.DECIDES)
     event_input = EventInput(
         original_id=str(uuid.uuid4()),
         account_id=file.account.original_id,
@@ -70,19 +109,22 @@ async def handle_event(file: File, event: Event, file_metadata: FileMetadata):
         file_name=file.name,
         siren=file.company.siren,
     )
+    logger.info(f"posting event {event_input}")
     post_event(event_input)
 
 
-async def handle_pv_ag(file: File, text_pages: List[str], file_metadata: FileMetadata):
+async def handle_pv_ag(
+    db, file: File, text_pages: List[str], file_metadata: FileMetadata
+):
     events = await extract_events(text_pages)
     for event in events:
-        await handle_event(file, event, file_metadata)
+        await handle_event(db, file, event, file_metadata)
 
 
 async def process_file(db, file: File):
     set_file_status(db, file, state.PROCESSING)
     images = get_images_from_file(file)
-    await process_images(file, images)
+    await process_images(db, file, images)
     set_file_status(db, file, state.PROCESSED)
 
 
@@ -91,7 +133,28 @@ def get_images_from_file(file: File):
     return pdf2images(key, company_id="images")
 
 
-async def process_images(file: File, images: Any):
+async def get_or_create_company(db, file_metadata: FileMetadata, file: File):
+    siren = file_metadata.siren
+    if siren is None:
+        raise ValueError("SIREN not found")
+    company = db.exec(select(Company).where(Company.siren == siren)).first()
+    if company is None:
+        logger.info(f"Creating company {company}")
+        company = Company(
+            siren=siren,
+            name=file_metadata.name,
+            account=file.account,
+        )
+        db.add(company)
+        db.commit()
+        db.refresh(company)
+        create_node(db, company, NodeType.COMPANY)
+    else:
+        logger.info(f"Company for siren {company} already exists")
+    return company
+
+
+async def process_images(db, file: File, images: Any):
     image_bytes = [
         s3.get_object(Bucket="tantar", Key=image["image_name"])["Body"].read()
         for image in images
@@ -100,15 +163,111 @@ async def process_images(file: File, images: Any):
     text_pages = [get_page_plane_text(blocks) for blocks in text_blocks]
 
     file_metadata = await extract_document_metadata(text_pages)
+    company = await get_or_create_company(db, file_metadata, file)
+    create_edge(db, company, file, EdgeLabel.ORGANIZED)
 
     match file_metadata.type:
         case FileType.CONTRAT:
-            await handle_contract(file, text_pages, text_blocks, file_metadata)
+            await handle_contract(db, file, text_pages, text_blocks, file_metadata)
         case FileType.PROCES_VERBAL_D_ASSEMBLEE_GENERALE:
-            await handle_pv_ag(file, text_pages, file_metadata)
+            await handle_pv_ag(db, file, text_pages, file_metadata)
         case _:
             raise ValueError(f"Unsupported file type {file_metadata.type}")
 
 
-async def update_links():
-    pass
+async def update_links_event(db, event: EventDBModel):
+    match event.type:
+        case EventType.TRANSFERT_DE_SIEGE_SOCIAL:
+            return get_contract_chunks_in_vector_db(
+                question=event.text,
+                metadata=f"account_id='{event.account_id}' AND siren='{event.siren}' AND (type='{ContractType.BAIL.value}' OR type='{ContractType.MISE_A_DISPOSITION_DE_LOCAL.value}' OR type='{ContractType.DOMICILIATION.value}' OR type='{ContractType.ACTE_DE_CESSION_D_UN_IMMEUBLE.value}' OR type='{ContractType.ACTE_DE_CESSION_D_UN_LOCAL.value}' OR type='{ContractType.CONTRAT_DE_SOUS_LOCATION.value}')",
+            )
+        case EventType.AUTORISATION_DE_SOUSCRIPTION_A_UN_PRET_BANCAIRE:
+            return get_contract_chunks_in_vector_db(
+                question=event.text,
+                metadata=f"account_id='{event.account_id}' AND siren='{event.siren}' AND type='{ContractType.PRET_BANCAIRE.value}'",
+            )
+        case EventType.AUTORISATION_D_ACQUISITION_D_UN_IMMEUBLE:
+            return get_contract_chunks_in_vector_db(
+                question=event.text,
+                metadata=f"account_id='{event.account_id}' AND siren='{event.siren}' AND type='{ContractType.ACTE_DE_CESSION_D_UN_IMMEUBLE.value}'",
+            )
+        case EventType.AUTORISATION_DE_CESSION_D_UN_IMMEUBLE:
+            return get_contract_chunks_in_vector_db(
+                question=event.text,
+                metadata=f"account_id='{event.account_id}' AND siren='{event.siren}' AND type='{ContractType.ACTE_DE_CESSION_D_UN_IMMEUBLE.value}'",
+            )
+        case EventType.AUTORISATION_DE_CESSION_D_UN_FONDS_DE_COMMERCE:
+            return get_contract_chunks_in_vector_db(
+                question=event.text,
+                metadata=f"account_id='{event.account_id}' AND siren='{event.siren}' AND type='{ContractType.ACTE_DE_CESSION_D_UN_LOCAL.value}'",
+            )
+        case EventType.AUTOSISATION_DE_PRISE_DE_PARTICIPATION:
+            return get_contract_chunks_in_vector_db(
+                question=event.text,
+                metadata=f"account_id='{event.account_id}' AND siren='{event.siren}' AND (type='{ContractType.BON_DE_SOUSCRIPTION.value}' OR type='{ContractType.BON_DE_SOUSCRIPTION_D_ACTION.value}' OR type='{ContractType.ACTE_DE_CESSION_D_ACTION.value}' OR type='{ContractType.BULLETIN_DE_SOUSCRIPTION.value}' OR type='{ContractType.PV_DE_CONSTATATION_D_AUGMENTATION_DE_CAPITAL.value}')",
+            )
+        case EventType.AUTORISATION_DE_CESSION_D_ACTIONS:
+            return get_contract_chunks_in_vector_db(
+                question=event.text,
+                metadata=f"account_id='{event.account_id}' AND siren='{event.siren}' AND (type='{ContractType.PROTOCOL_DE_CESSION.value}' OR type='{ContractType.FORMULAIRE_2759.value}' OR type='{ContractType.ORDRE_DE_MOUVEMENT_DE_TITRES.value}' OR type='{ContractType.ACTE_DE_CESSION_D_ACTION.value}')",
+            )
+        case EventType.DECISION_D_EMISSION_D_OBLIGATIONS:
+            return get_contract_chunks_in_vector_db(
+                question=event.text,
+                metadata=f"account_id='{event.account_id}' AND siren='{event.siren}' AND type='{ContractType.CONTRAT_D_EMISSION_D_OBLIGATIONS.value}'",
+            )
+        case EventType.DECISION_D_ATTRIBUTION_D_ACTION_GRATUITE:
+            return get_contract_chunks_in_vector_db(
+                question=event.text,
+                metadata=f"account_id='{event.account_id}' AND siren='{event.siren}' AND type='{ContractType.PLAN_D_ATTRIBUTION_D_ACTION_GRATUITE.value}'",
+            )
+        case EventType.AUTORISATION_DE_NANTISSEMENT_D_ACTIONS_OU_DE_PARTS:
+            return get_contract_chunks_in_vector_db(
+                question=event.text,
+                metadata=f"account_id='{event.account_id}' AND siren='{event.siren}' AND type='{ContractType.ETAT_DES_INSCRIPTIONS_DES_PRIVILEGES_ET_NANTISSEMENTS.value}'",
+            )
+        case EventType.AUTOSISATION_DE_CESSION_DE_MARQUE:
+            return get_contract_chunks_in_vector_db(
+                question=event.text,
+                metadata=f"account_id='{event.account_id}' AND siren='{event.siren}' AND (type='{ContractType.ACTE_DE_CESSION_DE_MARQUE.value}')",
+            )
+        case EventType.AUTORISATION_D_ACQUISITION_DE_MARQUE:
+            return get_contract_chunks_in_vector_db(
+                question=event.text,
+                metadata=f"account_id='{event.account_id}' AND siren='{event.siren}' AND (type='{ContractType.ACTE_DE_CESSION_DE_MARQUE.value}')",
+            )
+        case EventType.DECISION_D_APPROBATION_DES_CONVENTIONS_REGLEMENTEES:
+            return get_contract_chunks_in_vector_db(
+                question=event.text,
+                metadata=f"account_id='{event.account_id}' AND siren='{event.siren}' AND (type='{ContractType.RAPPORT_SPECIAL_DU_COMMISSAIRE_AU_COMPTES.value}')",
+            )
+        case EventType.AUTRE:
+            return
+
+
+async def update_links(db):
+    events = db.exec(select(EventDBModel)).all()
+    for event in events:
+        contract_chunks = await update_links_event(db, event)
+        if not contract_chunks:
+            logger.info("No contract found for this event")
+            continue
+        contract_chunk = contract_chunks[0]
+        file = db.exec(
+            select(File).where(File.original_id == contract_chunk.file_id)
+        ).first()
+        logger.info(
+            "Finding a link between an event and a contract",
+            extra={
+                "file_id": file.id,
+                "event_id": event.original_id,
+                "contract_chunk_id": contract_chunk.original_id,
+            },
+        )
+        create_edge(
+            db,
+            source=event,
+            target=file,
+            label=EdgeLabel.AUTHORIZED,
+        )

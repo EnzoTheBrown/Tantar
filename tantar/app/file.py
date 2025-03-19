@@ -9,7 +9,7 @@ from fastapi import (
     Query,
 )
 from fastapi.responses import StreamingResponse
-from schemas.model import FileAPIModel, Company, File, User
+from schemas.model import FileAPIModel, Company, File, User, EdgeLabel
 from tantar.graph import create_node, create_edge
 from tantar.database import get_db, Session
 from sqlmodel import select

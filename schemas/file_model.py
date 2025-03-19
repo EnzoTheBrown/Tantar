@@ -110,4 +110,4 @@ class ContractType(str, Enum):
 
 
 class ContractTypeModel(BaseModel):
-    contract_type: ContractType = Field(..., title="Type de contrat")
+    type: ContractType = Field(..., title="Type de contrat")

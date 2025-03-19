@@ -6,6 +6,7 @@ from sqlmodel import Field, SQLModel, Relationship
 from datetime import datetime
 import uuid
 from schemas.file_model import FileType, JuridicCategory, EventType, ContractType
+from enum import Enum
 
 embedder = get_registry().get("openai").create()
 VectorType = Vector(embedder.ndims())
@@ -150,6 +151,12 @@ class File(BaseSQLModel, table=True):
     created_at: datetime = Field(default_factory=datetime.now)
     watched_at: Optional[datetime] = Field(default=None)
     type: Optional[FileType] = Field(default=None)
+    events: List["EventDBModel"] = Relationship(
+        back_populates="file", cascade_delete=True
+    )
+    contracts: List["ContractDBModel"] = Relationship(
+        back_populates="file", cascade_delete=True
+    )
 
 
 class FileInputModel(BaseModel):
@@ -200,8 +207,21 @@ class PhysicalPerson(BaseSQLModel, table=True):
         return f"{self.firstname} {self.lastname}"
 
 
+class PhysicalPersonDBModel(BaseSQLModel, table=True):
+    firstname: str
+    lastname: str
+
+
 class MoralPerson(BaseSQLModel, table=True):
     name: str
+
+
+class MoralPersonDBModel(BaseSQLModel, table=True):
+    name: str
+    account_id: int = Field(foreign_key="account.id")
+
+
+Person = Union[PhysicalPerson, MoralPerson]
 
 
 """
@@ -221,6 +241,20 @@ class Event(FileChunk):
     page_number: int = Field(description="The index of the page in the file")
     type: EventType = Field(description="The type of the event")
     label: JuridicCategory = Field(description="The category of the event")
+
+    @property
+    def name(self):
+        return self.title
+
+
+class EventDBModel(BaseSQLModel, table=True):
+    text: str
+    title: str
+    page_number: int
+    type: EventType
+    label: JuridicCategory
+    file_id: int = Field(foreign_key="file.id")
+    file: File = Relationship(back_populates="events")
 
     @property
     def name(self):
@@ -284,8 +318,15 @@ class EventCategoriesAPIModel(BaseModel):
 class Contract(BaseModel):
     type: ContractType = Field(description="The type of the contract")
     title: str = Field(description="The title of the contract")
-    offeror: PhysicalPerson | MoralPerson = Field(description="The offeror")
-    offeree: MoralPerson = Field(description="The offeree")
+    offeror: Person = Field(description="The offeror")
+    offeree: Person = Field(description="The offeree")
+
+
+class ContractDBModel(BaseSQLModel, table=True):
+    type: ContractType
+    title: str
+    file_id: int = Field(foreign_key="file.id")
+    file: File = Relationship(back_populates="contracts")
 
 
 class ContractChunkInput(BaseModel):
@@ -325,9 +366,18 @@ class ContractChunk(LanceModel):
 """
 
 
+class NodeType(str, Enum):
+    COMPANY = "company"
+    CONTRACT = "contract"
+    PV_AG = "pv_ag"
+    EVENT = "event"
+    MORAL_PERSON = "moral_person"
+    PHYSICAL_PERSON = "physical_person"
+
+
 class GraphNode(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
-    label: str
+    type: NodeType
     original_id: str
     name: str
 
@@ -352,11 +402,19 @@ class GraphNode(SQLModel, table=True):
         )
 
 
+class EdgeLabel(str, Enum):
+    DECIDES = "DECIDES"
+    OFFEROR = "OFFEROR"
+    OFFEREE = "OFFEREE"
+    ORGANIZED = "ORGANIZED"
+    AUTHORIZED = "AUTHORIZED"
+
+
 class GraphEdge(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
     source_id: int = Field(foreign_key="graphnode.id")
     target_id: int = Field(foreign_key="graphnode.id")
-    label: str
+    label: EdgeLabel
 
     source: GraphNode = Relationship(
         back_populates="source_edges",

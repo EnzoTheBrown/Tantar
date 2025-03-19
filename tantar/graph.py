@@ -6,6 +6,7 @@ from schemas.model import (
     Company,
     MoralPerson,
     PhysicalPerson,
+    NodeType,
 )
 from typing import Union
 from sqlmodel import select
@@ -13,9 +14,9 @@ from sqlmodel import select
 Node = Union[Company, File, EventInput, MoralPerson, PhysicalPerson]
 
 
-def create_node(db, entity: Node) -> GraphNode:
+def create_node(db, entity: Node, type: NodeType) -> GraphNode:
     node = GraphNode(
-        label=entity.__class__.__name__,
+        type=type,
         original_id=entity.original_id,
         name=entity.name,
     )
@@ -45,3 +46,13 @@ def create_edge(db, source: Node, target: Node, label: str) -> GraphEdge:
     db.commit()
 
     return edge
+
+
+def get_neighbors(db, node: Node) -> list[GraphNode]:
+    node = get_node(db, node.original_id)
+    edge = db.exec(select(GraphEdge).where(GraphEdge.source == node)).all()
+    nodes = [
+        db.exec(select(GraphNode).where(GraphNode.id == e.target_id)).first()
+        for e in edge
+    ]
+    return nodes
