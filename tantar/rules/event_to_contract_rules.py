@@ -1,0 +1,145 @@
+from schemas.file_model import ContractType
+from schemas.model import EventDBModel, EventType, ContractChunk
+from tantar.vector_database import get_contract_chunks_in_vector_db
+from typing import List, Optional
+
+
+async def update_links_event(event: EventDBModel) -> Optional[List[ContractChunk]]:
+    match event.type:
+        case EventType.TRANSFERT_DE_SIEGE_SOCIAL:
+            return get_contract_chunks_in_vector_db(
+                question=event.text,
+                metadata=f"""
+                        account_id='{event.account_id}'
+                    AND siren='{event.siren}'
+                    AND (
+                           type='{ContractType.BAIL.value}'
+                        OR type='{ContractType.MISE_A_DISPOSITION_DE_LOCAL.value}'
+                        OR type='{ContractType.DOMICILIATION.value}'
+                        OR type='{ContractType.ACTE_DE_CESSION_D_UN_IMMEUBLE.value}'
+                        OR type='{ContractType.ACTE_DE_CESSION_D_UN_LOCAL.value}'
+                        OR type='{ContractType.CONTRAT_DE_SOUS_LOCATION.value}'
+                        )
+                """,
+            )
+        case EventType.AUTORISATION_DE_SOUSCRIPTION_A_UN_PRET_BANCAIRE:
+            return get_contract_chunks_in_vector_db(
+                question=event.text,
+                metadata=f"""
+                        account_id='{event.account_id}'
+                    AND siren='{event.siren}'
+                    AND type='{ContractType.PRET_BANCAIRE.value}'
+                """,
+            )
+        case EventType.AUTORISATION_D_ACQUISITION_D_UN_IMMEUBLE:
+            return get_contract_chunks_in_vector_db(
+                question=event.text,
+                metadata=f"""
+                        account_id='{event.account_id}'
+                    AND siren='{event.siren}'
+                    AND type='{ContractType.ACTE_DE_CESSION_D_UN_IMMEUBLE.value}'
+                """,
+            )
+        case EventType.AUTORISATION_DE_CESSION_D_UN_IMMEUBLE:
+            return get_contract_chunks_in_vector_db(
+                question=event.text,
+                metadata=f"""
+                        account_id='{event.account_id}'
+                    AND siren='{event.siren}'
+                    AND type='{ContractType.ACTE_DE_CESSION_D_UN_IMMEUBLE.value}'
+                """,
+            )
+        case EventType.AUTORISATION_DE_CESSION_D_UN_FONDS_DE_COMMERCE:
+            return get_contract_chunks_in_vector_db(
+                question=event.text,
+                metadata=f"""
+                        account_id='{event.account_id}'
+                    AND siren='{event.siren}'
+                    AND type='{ContractType.ACTE_DE_CESSION_D_UN_LOCAL.value}'
+                """,
+            )
+        case EventType.AUTOSISATION_DE_PRISE_DE_PARTICIPATION:
+            return get_contract_chunks_in_vector_db(
+                question=event.text,
+                metadata=f"""
+                        account_id='{event.account_id}'
+                    AND siren='{event.siren}'
+                    AND (
+                           type='{ContractType.BON_DE_SOUSCRIPTION.value}'
+                        OR type='{ContractType.BON_DE_SOUSCRIPTION_D_ACTION.value}'
+                        OR type='{ContractType.ACTE_DE_CESSION_D_ACTION.value}'
+                        OR type='{ContractType.BULLETIN_DE_SOUSCRIPTION.value}'
+                        OR type='{ContractType.PV_DE_CONSTATATION_D_AUGMENTATION_DE_CAPITAL.value}'
+                    )
+                """,
+            )
+        case EventType.AUTORISATION_DE_CESSION_D_ACTIONS:
+            return get_contract_chunks_in_vector_db(
+                question=event.text,
+                metadata=f"""
+                        account_id='{event.account_id}'
+                    AND siren='{event.siren}'
+                    AND (
+                           type='{ContractType.PROTOCOL_DE_CESSION.value}'
+                        OR type='{ContractType.FORMULAIRE_2759.value}'
+                        OR type='{ContractType.ORDRE_DE_MOUVEMENT_DE_TITRES.value}'
+                        OR type='{ContractType.ACTE_DE_CESSION_D_ACTION.value}'
+                    )
+                """,
+            )
+        case EventType.DECISION_D_EMISSION_D_OBLIGATIONS:
+            return get_contract_chunks_in_vector_db(
+                question=event.text,
+                metadata=f"""
+                        account_id='{event.account_id}'
+                    AND siren='{event.siren}'
+                    AND type='{ContractType.CONTRAT_D_EMISSION_D_OBLIGATIONS.value}'
+                """,
+            )
+        case EventType.DECISION_D_ATTRIBUTION_D_ACTION_GRATUITE:
+            return get_contract_chunks_in_vector_db(
+                question=event.text,
+                metadata=f"""
+                        account_id='{event.account_id}'
+                    AND siren='{event.siren}'
+                    AND type='{ContractType.PLAN_D_ATTRIBUTION_D_ACTION_GRATUITE.value}'
+                """,
+            )
+        case EventType.AUTORISATION_DE_NANTISSEMENT_D_ACTIONS_OU_DE_PARTS:
+            return get_contract_chunks_in_vector_db(
+                question=event.text,
+                metadata=f"""
+                        account_id='{event.account_id}'
+                    AND siren='{event.siren}'
+                    AND type='{ContractType.ETAT_DES_INSCRIPTIONS_DES_PRIVILEGES_ET_NANTISSEMENTS.value}'
+                """,
+            )
+        case EventType.AUTOSISATION_DE_CESSION_DE_MARQUE:
+            return get_contract_chunks_in_vector_db(
+                question=event.text,
+                metadata=f"""
+                        account_id='{event.account_id}'
+                    AND siren='{event.siren}'
+                    AND (type='{ContractType.ACTE_DE_CESSION_DE_MARQUE.value}')
+                """,
+            )
+        case EventType.AUTORISATION_D_ACQUISITION_DE_MARQUE:
+            return get_contract_chunks_in_vector_db(
+                question=event.text,
+                metadata=f"""
+                        account_id='{event.account_id}'
+                    AND siren='{event.siren}'
+                    AND (type='{ContractType.ACTE_DE_CESSION_DE_MARQUE.value}')
+                """,
+            )
+        case EventType.DECISION_D_APPROBATION_DES_CONVENTIONS_REGLEMENTEES:
+            return get_contract_chunks_in_vector_db(
+                question=event.text,
+                metadata=f"""
+                        account_id='{event.account_id}'
+                    AND siren='{event.siren}'
+                    AND (type='{ContractType.RAPPORT_SPECIAL_DU_COMMISSAIRE_AU_COMPTES.value}')
+                """,
+            )
+        case EventType.AUTRE:
+            return None
