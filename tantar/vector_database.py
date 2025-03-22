@@ -69,7 +69,7 @@ def get_events(
     start_date: Optional[str] = None,
     end_date: Optional[str] = None,
     company_id: Optional[str] = None,
-) -> List[Event]:
+) -> List[VectorEvent]:
     metadata = [f"account_id='{account_id}'"]
     if company_id is not None:
         metadata.append(f"company_id='{company_id}'")

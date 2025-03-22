@@ -56,6 +56,20 @@ class EventType(str, Enum):
     DECISION_D_APPROBATION_DES_CONVENTIONS_REGLEMENTEES = (
         "Décision d'approbation des conventions réglementées"
     )
+    DECISION_D_APPROBATION_DES_COMPTES_ANNUELS = (
+        "Décision d'approbation des comptes annuels"
+    )
+    DECISION_DE_DISTRIBUTION_DE_DIVIDENDES = "Décision de distribution de dividendes"
+    AUGMENTATION_DE_CAPITAL = "Augmentation de capital"
+    REDUCTION_DE_CAPITAL = "Réduction de capital"
+    MODIFICATION_DES_STATUTS = "Modification des statuts"
+    NOMINATION_DES_DIRECTEURS = "Nomination des dirigeants"
+    NOMINATION_DES_COMMISSAIRES_AUX_COMPTES = "Nomination des commissaires aux comptes"
+    FUSION = "Décision de fusion"
+    SCISSION = "Décision de scission"
+    DISSOLUTION_ET_LIQUIDATION = "Décision de dissolution et liquidation"
+    TRANSFORMATION_DE_LA_SOCIETE = "Transformation de la société"
+    CHANGEMENT_D_OBJET_SOCIAL = "Changement d'objet social"
     AUTRE = "Autre"
 
 

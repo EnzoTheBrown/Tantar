@@ -255,6 +255,7 @@ class EventDBModel(BaseSQLModel, table=True):
     label: JuridicCategory
     file_id: int = Field(foreign_key="file.id")
     file: File = Relationship(back_populates="events")
+    date: Optional[datetime] = Field(default=None)
 
     @property
     def name(self):

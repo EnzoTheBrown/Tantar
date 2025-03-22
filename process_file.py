@@ -31,7 +31,7 @@ from tantar.vector_database import (
     get_contract_chunks_in_vector_db,
 )
 from tantar.model.tokenizer import tokenize_paragraphs
-from tantar.rules.event_to_contract_rules import update_links_event
+from tantar.rules.event_to_contract_rules import find_matching_contract_chunks
 
 import uuid
 
@@ -91,6 +91,7 @@ async def handle_event(db, file: File, event: Event, file_metadata: FileMetadata
         type=event.type,
         label=event.label,
         file=file,
+        date=file_metadata.date,
     )
     db.add(event_db)
     db.commit()
@@ -179,7 +180,7 @@ async def process_images(db, file: File, images: Any):
 async def update_links(db):
     events = db.exec(select(EventDBModel)).all()
     for event in events:
-        contract_chunks = await update_links_event(db, event)
+        contract_chunks = await find_matching_contract_chunks(event)
         if not contract_chunks:
             logger.info("No contract found for this event")
             continue
