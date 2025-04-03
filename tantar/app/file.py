@@ -69,7 +69,9 @@ async def create_file(
         account_id=user.account.original_id,
         message=WebSocketNewFileMessage(file=file_model),
     )
-    background_tasks.add_task(run_process_file, new_file.original_id)
+    background_tasks.add_task(
+        run_process_file, new_file.original_id, account_id=user.account.original_id
+    )
 
     return file_model
 

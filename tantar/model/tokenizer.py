@@ -29,13 +29,13 @@ def tokenize_paragraphs(
             if previous_bottom is not None:
                 if (top - previous_bottom) > gap_threshold:
                     paragraph = FileChunk(
-                        text=current_paragraph.strip(), page_number=page
+                        text=current_paragraph.strip(), page_index=page
                     )
                     paragraphs.append(paragraph)
                     current_paragraph = ""
             current_paragraph += block["Text"] + " "
             previous_bottom = bottom
         if current_paragraph.strip():
-            paragraph = FileChunk(text=current_paragraph.strip(), page_number=page)
+            paragraph = FileChunk(text=current_paragraph.strip(), page_index=page)
             paragraphs.append(paragraph)
     return paragraphs

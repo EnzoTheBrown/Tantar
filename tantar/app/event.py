@@ -9,6 +9,7 @@ from schemas.model import (
     Account,
     Event,
     EventInput,
+    EventDBModel,
 )
 from tantar.database import get_db, Session
 from sqlmodel import select
