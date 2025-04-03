@@ -1,0 +1,5 @@
+$3c2d2f7a-1d50-47cd-adbf-1afc8cf4ac74²Á+original_id ÿÿÿÿÿÿÿÿÿ*string8Zdefault,
+account_id ÿÿÿÿÿÿÿÿÿ*string8Zdefault,
+company_id ÿÿÿÿÿÿÿÿÿ*string8Zdefault)file_id ÿÿÿÿÿÿÿÿÿ*string8Zdefault&date ÿÿÿÿÿÿÿÿÿ*string8Zdefault&type ÿÿÿÿÿÿÿÿÿ*string8Zdefault&text ÿÿÿÿÿÿÿÿÿ*string8Zdefault'title ÿÿÿÿÿÿÿÿÿ*string8Zdefault+
+page_index ÿÿÿÿÿÿÿÿÿ*int648Zdefault+	file_name	 ÿÿÿÿÿÿÿÿÿ*string8Zdefault'siren
+ ÿÿÿÿÿÿÿÿÿ*string8Zdefault'label ÿÿÿÿÿÿÿÿÿ*string8Zdefault>vector ÿÿÿÿÿÿÿÿÿ*fixed_size_list:float:153608Zdefault

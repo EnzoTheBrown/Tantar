@@ -123,6 +123,16 @@ async def handle_pv_ag(
         await handle_event(db, file, event, file_metadata)
 
 
+async def run_process_file(original_id: str):
+    from tantar.database import get_db
+
+    db = get_db()
+    session = next(db)
+    file = session.exec(select(File).where(File.original_id == original_id)).first()
+    await process_file(session, file)
+    session.close()
+
+
 async def process_file(db, file: File):
     set_file_status(db, file, state.PROCESSING)
     images = get_images_from_file(file)
@@ -166,12 +176,17 @@ async def process_images(db, file: File, images: Any):
 
     file_metadata = await extract_document_metadata(text_pages)
     company = await get_or_create_company(db, file_metadata, file)
-    create_edge(db, company, file, EdgeLabel.ORGANIZED)
+    file.company = company
+    db.commit()
+    db.refresh(file)
 
     match file_metadata.type:
         case FileType.CONTRAT:
+            create_node(db, file, NodeType.CONTRACT)
             await handle_contract(db, file, text_pages, text_blocks, file_metadata)
         case FileType.PROCES_VERBAL_D_ASSEMBLEE_GENERALE:
+            create_node(db, file, NodeType.PV_AG)
+            create_edge(db, company, file, EdgeLabel.ORGANIZED)
             await handle_pv_ag(db, file, text_pages, file_metadata)
         case _:
             raise ValueError(f"Unsupported file type {file_metadata.type}")

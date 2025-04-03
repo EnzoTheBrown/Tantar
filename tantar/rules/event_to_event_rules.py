@@ -5,7 +5,12 @@ from datetime import timedelta
 
 
 def within_the_same_year(event: EventDBModel) -> str:
-    pass
+    """Days in lanceDB are in format 'YYYY-MM-DD'"""
+    if event.date is None:
+        return "1 = 1"
+    _3_months_before = event.date - timedelta(days=90)
+    _3_months_after = event.date + timedelta(days=90)
+    return f"date>='{_3_months_before}' AND date<='{_3_months_after}'"
 
 
 async def find_matching_events(

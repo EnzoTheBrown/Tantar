@@ -12,9 +12,7 @@ from tantar.utils.logger import get_logger
 
 logger = get_logger(__name__)
 
-db = lancedb.connect(
-    "s3://tantar/pitantar/database.lance", storage_options={"timeout": "60s"}
-)
+db = lancedb.connect("db/database.lance")
 
 try:
     contract_chunks_table = db.open_table("contracts")
