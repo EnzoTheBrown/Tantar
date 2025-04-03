@@ -19,6 +19,3 @@ async def test_process_file_contract(db, contract: File):
     db.refresh(contract)
     assert contract.status == state.PROCESSED
     await update_links(db)
-    import pdb
-
-    pdb.set_trace()

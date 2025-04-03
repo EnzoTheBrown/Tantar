@@ -7,10 +7,10 @@ from fastapi import (
     File as FFile,
     Security,
     Query,
+    BackgroundTasks,
 )
 from fastapi.responses import StreamingResponse
-from schemas.model import FileAPIModel, Company, File, User, EdgeLabel
-from tantar.graph import create_node, create_edge
+from schemas.model import FileAPIModel, Company, File, User
 from tantar.database import get_db, Session
 from sqlmodel import select
 from tantar.settings import SETTINGS
@@ -21,6 +21,7 @@ from .websocket import notify, notify_account, notify_account
 from typing import Optional, Annotated
 from schemas.websocket import WebSocketParsingError, WebSocketNewFileMessage
 from datetime import datetime
+from process_file import run_process_file
 
 logger = get_logger(__name__)
 file_router = APIRouter()
@@ -35,6 +36,7 @@ async def create_file(
             get_current_user,
         ),
     ],
+    background_tasks: BackgroundTasks,
     company_id: Optional[str] = Query(None),
     file=FFile(...),
     db: Session = Depends(get_db),
@@ -62,12 +64,13 @@ async def create_file(
     db.add(new_file)
     db.commit()
     db.refresh(new_file)
-    create_node(db, new_file)
     file_model = FileAPIModel.model_validate(new_file)
     await notify_account(
         account_id=user.account.original_id,
         message=WebSocketNewFileMessage(file=file_model),
     )
+    background_tasks.add_task(run_process_file, new_file.original_id)
+
     return file_model
 
 
