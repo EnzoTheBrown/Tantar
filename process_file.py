@@ -74,7 +74,7 @@ async def handle_contract(
             date=file_metadata.date.strftime("%Y-%m-%d"),
             text=paragraph.text,
             title=file_metadata.title,
-            page_index=paragraph.page_number,
+            page_index=paragraph.page_index,
             file_name=file.name,
             siren=file.company.siren,
             type=contract_type,
@@ -87,7 +87,7 @@ async def handle_event(db, file: File, event: Event, file_metadata: FileMetadata
     event_db = EventDBModel(
         text=event.text,
         title=event.title,
-        page_number=event.page_number,
+        page_index=event.page_index,
         type=event.type,
         label=event.label,
         file=file,
@@ -107,7 +107,7 @@ async def handle_event(db, file: File, event: Event, file_metadata: FileMetadata
         title=event.title,
         label=event.label,
         type=event.type,
-        page_index=event.page_number,
+        page_index=event.page_index,
         file_name=file.name,
         siren=file.company.siren,
     )
@@ -123,20 +123,20 @@ async def handle_pv_ag(
         await handle_event(db, file, event, file_metadata)
 
 
-async def run_process_file(original_id: str):
+async def run_process_file(original_id: str, account_id: str):
     from tantar.database import get_db
 
     db = get_db()
     session = next(db)
     file = session.exec(select(File).where(File.original_id == original_id)).first()
-    await process_file(session, file)
+    await process_file(session, file, account_id)
     session.close()
 
 
-async def process_file(db, file: File):
+async def process_file(db, file: File, account_id: str):
     set_file_status(db, file, state.PROCESSING)
     images = get_images_from_file(file)
-    await process_images(db, file, images)
+    await process_images(db, file, images, account_id)
     set_file_status(db, file, state.PROCESSED)
 
 
@@ -145,11 +145,18 @@ def get_images_from_file(file: File):
     return pdf2images(key, company_id="images")
 
 
-async def get_or_create_company(db, file_metadata: FileMetadata, file: File):
+async def get_or_create_company(
+    db, file_metadata: FileMetadata, file: File, account_id: str
+):
     siren = file_metadata.siren
     if siren is None:
         raise ValueError("SIREN not found")
-    company = db.exec(select(Company).where(Company.siren == siren)).first()
+    company = db.exec(
+        select(Company).where(
+            Company.siren == siren,
+            Company.account_id == account_id,
+        )
+    ).first()
     if company is None:
         logger.info(f"Creating company {company}")
         company = Company(
@@ -162,11 +169,11 @@ async def get_or_create_company(db, file_metadata: FileMetadata, file: File):
         db.refresh(company)
         create_node(db, company, NodeType.COMPANY)
     else:
-        logger.info(f"Company for siren {company} already exists")
+        logger.info(f"Company {company} already exists")
     return company
 
 
-async def process_images(db, file: File, images: Any):
+async def process_images(db, file: File, images: Any, account_id: str):
     image_bytes = [
         s3.get_object(Bucket="tantar", Key=image["image_name"])["Body"].read()
         for image in images
@@ -175,7 +182,7 @@ async def process_images(db, file: File, images: Any):
     text_pages = [get_page_plane_text(blocks) for blocks in text_blocks]
 
     file_metadata = await extract_document_metadata(text_pages)
-    company = await get_or_create_company(db, file_metadata, file)
+    company = await get_or_create_company(db, file_metadata, file, account_id)
     file.company = company
     db.commit()
     db.refresh(file)

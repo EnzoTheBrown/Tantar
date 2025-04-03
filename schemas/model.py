@@ -120,7 +120,7 @@ class CompanyDetailsAPIModel(BaseModel):
 
 class FileChunk(BaseModel):
     text: str
-    page_number: int
+    page_index: int
 
 
 def format_siren(siren: str):
@@ -238,7 +238,7 @@ class Event(FileChunk):
     moral_persons: List[MoralPerson] = Field(
         description="The list of moral persons", default=[]
     )
-    page_number: int = Field(description="The index of the page in the file")
+    page_index: int = Field(description="The index of the page in the file")
     type: EventType = Field(description="The type of the event")
     label: JuridicCategory = Field(description="The category of the event")
 
@@ -250,7 +250,7 @@ class Event(FileChunk):
 class EventDBModel(BaseSQLModel, table=True):
     text: str
     title: str
-    page_number: int
+    page_index: int
     type: EventType
     label: JuridicCategory
     file_id: int = Field(foreign_key="file.id")
@@ -307,7 +307,7 @@ class VectorEvent(LanceModel):
 
 
 class EventCategoriesAPIModel(BaseModel):
-    events: List[Event]
+    events: List[VectorEvent]
     categories: List[str]
 
 
