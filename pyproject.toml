@@ -25,6 +25,7 @@ dependencies = [
     "pydantic-ai>=0.0.20",
     "sqlmodel>=0.0.22",
     "lancedb>=0.20.0",
+    "pandas>=2.2.3",
 ]
 
 [dependency-groups]
