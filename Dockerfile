@@ -12,3 +12,4 @@ COPY tantar tantar
 COPY alembic.ini alembic.ini
 COPY alembic alembic
 COPY scheduler.py scheduler.py
+COPY process_file.py process_file.py
