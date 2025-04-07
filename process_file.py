@@ -15,6 +15,9 @@ from schemas.model import (
     ContractDBModel,
     EdgeLabel,
     NodeType,
+    Account,
+    MoralPerson,
+    PhysicalPerson,
 )
 from tantar.graph import create_node, create_edge
 from schemas.file_model import FileType, ContractType, EventType
@@ -32,6 +35,7 @@ from tantar.vector_database import (
 )
 from tantar.model.tokenizer import tokenize_paragraphs
 from tantar.rules.event_to_contract_rules import find_matching_contract_chunks
+from tantar.pappers import create_company_details
 
 import uuid
 
@@ -71,7 +75,9 @@ async def handle_contract(
             account_id=file.account.original_id,
             company_id=file.company.original_id,
             file_id=file.original_id,
-            date=file_metadata.date.strftime("%Y-%m-%d"),
+            date=file_metadata.date.strftime("%Y-%m-%d")
+            if file_metadata.date
+            else None,
             text=paragraph.text,
             title=file_metadata.title,
             page_index=paragraph.page_index,
@@ -83,7 +89,9 @@ async def handle_contract(
         post_contract_chunk(contract_chunk)
 
 
-async def handle_event(db, file: File, event: Event, file_metadata: FileMetadata):
+async def handle_event(
+    db, file: File, event: Event, file_metadata: FileMetadata
+) -> EventInput:
     event_db = EventDBModel(
         text=event.text,
         title=event.title,
@@ -95,10 +103,8 @@ async def handle_event(db, file: File, event: Event, file_metadata: FileMetadata
     )
     db.add(event_db)
     db.commit()
-    create_node(db, event_db, NodeType.EVENT)
-    create_edge(db, file, event_db, EdgeLabel.DECIDES)
     event_input = EventInput(
-        original_id=str(uuid.uuid4()),
+        original_id=event_db.original_id,
         account_id=file.account.original_id,
         company_id=file.company.original_id,
         file_id=file.original_id,
@@ -113,6 +119,9 @@ async def handle_event(db, file: File, event: Event, file_metadata: FileMetadata
     )
     logger.info(f"posting event {event_input}")
     post_event(event_input)
+    create_node(db, event_input, NodeType.EVENT)
+    create_edge(db, file, event_input, EdgeLabel.DECIDES)
+    return event_input
 
 
 async def handle_pv_ag(
@@ -120,7 +129,41 @@ async def handle_pv_ag(
 ):
     events = await extract_events(text_pages)
     for event in events:
-        await handle_event(db, file, event, file_metadata)
+        event_input = await handle_event(db, file, event, file_metadata)
+        for moral_person in event.moral_persons:
+            mp_db = db.exec(
+                select(MoralPerson).where(
+                    MoralPerson.name == moral_person.name,
+                )
+            ).first()
+            if mp_db is None:
+                logger.info(f"Creating moral person {moral_person.name}")
+                mp_db = MoralPerson(
+                    name=moral_person.name,
+                )
+                db.add(mp_db)
+                db.commit()
+                db.refresh(mp_db)
+                create_node(db, mp_db, NodeType.MORAL_PERSON)
+                create_edge(db, event_input, mp_db, EdgeLabel.IS_MENTIONED)
+        for physical_person in event.physical_persons:
+            pp_db = db.exec(
+                select(PhysicalPerson).where(
+                    PhysicalPerson.firstname == physical_person.firstname,
+                    PhysicalPerson.lastname == physical_person.lastname,
+                )
+            ).first()
+            if pp_db is None:
+                logger.info(f"Creating physical person {physical_person.name}")
+                pp_db = PhysicalPerson(
+                    firstname=physical_person.firstname,
+                    lastname=physical_person.lastname,
+                )
+                db.add(pp_db)
+                db.commit()
+                db.refresh(pp_db)
+                create_node(db, pp_db, NodeType.PHYSICAL_PERSON)
+                create_edge(db, event_input, pp_db, EdgeLabel.IS_MENTIONED)
 
 
 async def run_process_file(original_id: str, account_id: str):
@@ -145,28 +188,33 @@ def get_images_from_file(file: File):
     return pdf2images(key, company_id="images")
 
 
-async def get_or_create_company(
-    db, file_metadata: FileMetadata, file: File, account_id: str
-):
+async def get_or_create_company(db, file_metadata: FileMetadata, account_id: str):
+    logger.info(f"Getting or creating company {file_metadata.siren}")
     siren = file_metadata.siren
     if siren is None:
         raise ValueError("SIREN not found")
+
+    account = db.exec(select(Account).where(Account.original_id == account_id)).first()
     company = db.exec(
         select(Company).where(
             Company.siren == siren,
-            Company.account_id == account_id,
+            Company.account == account,
         )
     ).first()
     if company is None:
-        logger.info(f"Creating company {company}")
+        logger.info(f"The company {siren} does not exist, creating it")
         company = Company(
             siren=siren,
             name=file_metadata.name,
-            account=file.account,
+            account=account,
         )
         db.add(company)
         db.commit()
         db.refresh(company)
+        logger.info(f"Creating company details for company {company.original_id}")
+        company_details = create_company_details(company)
+        db.add(company_details)
+        db.commit()
         create_node(db, company, NodeType.COMPANY)
     else:
         logger.info(f"Company {company} already exists")
@@ -182,8 +230,9 @@ async def process_images(db, file: File, images: Any, account_id: str):
     text_pages = [get_page_plane_text(blocks) for blocks in text_blocks]
 
     file_metadata = await extract_document_metadata(text_pages)
-    company = await get_or_create_company(db, file_metadata, file, account_id)
+    company = await get_or_create_company(db, file_metadata, account_id)
     file.company = company
+    file.type = file_metadata.type
     db.commit()
     db.refresh(file)
 

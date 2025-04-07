@@ -8,7 +8,7 @@ from schemas.model import (
     PhysicalPerson,
     NodeType,
 )
-from typing import Union
+from typing import Union, Optional
 from sqlmodel import select
 
 Node = Union[Company, File, EventInput, MoralPerson, PhysicalPerson]
@@ -27,7 +27,7 @@ def create_node(db, entity: Node, type: NodeType) -> GraphNode:
     return node
 
 
-def get_node(db, original_id: str) -> GraphNode:
+def get_node(db, original_id: str) -> Optional[GraphNode]:
     return db.exec(
         select(GraphNode).where(GraphNode.original_id == original_id)
     ).first()
@@ -36,15 +36,13 @@ def get_node(db, original_id: str) -> GraphNode:
 def create_edge(db, source: Node, target: Node, label: str) -> GraphEdge:
     source_node = get_node(db, source.original_id)
     target_node = get_node(db, target.original_id)
-
-    if source_node is None or target_node is None:
-        raise ValueError("Source or target node not found")
-
+    if source_node is None:
+        raise ValueError("Source node not found")
+    if target_node is None:
+        raise ValueError("Target node not found")
     edge = GraphEdge(source=source_node, target=target_node, label=label)
-
     db.add(edge)
     db.commit()
-
     return edge
 
 

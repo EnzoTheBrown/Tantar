@@ -13,18 +13,18 @@ from datetime import datetime
 
 
 file_classifier_agent = Agent(
-    "mistral:mistral-large-latest",
+    "openai:gpt-4o",
     result_type=FileTypeModel,
 )
 
 contract_classifier_agent = Agent(
-    "mistral:mistral-large-latest",
+    "openai:gpt-4o",
     result_type=ContractTypeModel,
 )
 
 
 event_classifier_agent = Agent(
-    "mistral:mistral-large-latest",
+    "openai:gpt-4o",
     result_type=EventTypeModel,
 )
 

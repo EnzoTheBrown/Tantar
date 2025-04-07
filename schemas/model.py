@@ -1,6 +1,13 @@
 from lancedb.pydantic import LanceModel, Vector
 from lancedb.embeddings import get_registry
-from pydantic import BaseModel, Field, EmailStr, ConfigDict, BeforeValidator
+from pydantic import (
+    BaseModel,
+    Field,
+    EmailStr,
+    ConfigDict,
+    BeforeValidator,
+    model_serializer,
+)
 from typing import List, Optional, Union, Annotated
 from sqlmodel import Field, SQLModel, Relationship
 from datetime import datetime
@@ -262,6 +269,21 @@ class EventDBModel(BaseSQLModel, table=True):
         return self.title
 
 
+class EventAPIModel(BaseModel):
+    original_id: str
+    text: str
+    title: str
+    page_index: int
+    type: EventType
+    label: JuridicCategory
+    file: FileAPIModel
+    date: Optional[datetime] = Field(default=None)
+
+    @property
+    def name(self):
+        return self.title
+
+
 class JuridicEvents(BaseModel):
     events: List[Event] = Field(description="The list of juridic events")
 
@@ -307,7 +329,7 @@ class VectorEvent(LanceModel):
 
 
 class EventCategoriesAPIModel(BaseModel):
-    events: List[VectorEvent]
+    events: List[EventAPIModel]
     categories: List[str]
 
 
@@ -409,6 +431,7 @@ class EdgeLabel(str, Enum):
     OFFEREE = "OFFEREE"
     ORGANIZED = "ORGANIZED"
     AUTHORIZED = "AUTHORIZED"
+    IS_MENTIONED = "IS_MENTIONED"
 
 
 class GraphEdge(SQLModel, table=True):

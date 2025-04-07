@@ -1,4 +1,3 @@
-from tantar.settings import SETTINGS
 from fastapi import Depends, HTTPException, APIRouter, Query
 from schemas.model import (
     Company,
@@ -17,8 +16,6 @@ from typing import Optional
 from tantar.utils.logger import get_logger
 from tantar.vector_database import get_events, post_event
 from .authenticate import get_current_user
-from .websocket import notify
-from schemas.websocket import WebSocketNewEventMessage
 import uuid
 
 logger = get_logger(__name__)
@@ -53,11 +50,6 @@ async def create_event(
     )
     post_event(new_event)
     event_model = Event.model_validate(new_event)
-    # await notify(
-    #     company_id=original_id,
-    #     message=WebSocketNewEventMessage(event=event_model),
-    #     db=db
-    # )
     return event_model
 
 
@@ -87,9 +79,15 @@ async def get_events_(
         siren=None,
     )
     categories = list(set([event.label for event in events]))
+    events_db = []
+    for event in events:
+        event_db = db.exec(
+            select(EventDBModel).where(EventDBModel.original_id == event.original_id)
+        ).first()
+        events_db.append(event_db)
     return EventCategoriesAPIModel(
         categories=categories,
-        events=events,
+        events=events_db,
     )
 
 
