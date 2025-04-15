@@ -185,7 +185,7 @@ async def handle_pv_ag(
     events = await extract_events(text_pages)
     for event in events:
         if file.company is not None:
-            message = WebSocketNewEventMessage(company=file.company)
+            message = WebSocketNewEventMessage(event=event)
             await notify(
                 company_id=file.company.original_id,
                 message=message,
