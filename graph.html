@@ -2,8 +2,17 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Improved D3.js Directed Graph</title>
+  <title>Fullscreen D3.js Directed Graph</title>
   <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      overflow: hidden;
+    }
+    svg {
+      width: 100vw;
+      height: 100vh;
+    }
     .link {
       stroke: #666;
       stroke-opacity: 0.8;
@@ -22,44 +31,58 @@
   </style>
 </head>
 <body>
-  <svg width="800" height="600"></svg>
-
+  <svg></svg>
   <!-- Include D3.js -->
   <script src="https://d3js.org/d3.v6.min.js"></script>
   <script>
-    const svg = d3.select("svg"),
-          width = +svg.attr("width"),
-          height = +svg.attr("height");
+    // Set up the SVG dimensions based on the browser window
+    let width = window.innerWidth;
+    let height = window.innerHeight;
+    
+    const svg = d3.select("svg")
+                  .attr("width", width)
+                  .attr("height", height);
 
     // Define arrow markers for directed edges
-    svg.append("defs").selectAll("marker")
-      .data(["end"])
-      .enter().append("marker")
-        .attr("id", "arrowhead")
-        .attr("viewBox", "-0 -5 10 10")
-        .attr("refX", 30)
-        .attr("refY", 0)
-        .attr("orient", "auto")
-        .attr("markerWidth", 8)
-        .attr("markerHeight", 8)
-        .attr("xoverflow", "visible")
-      .append("svg:path")
-        .attr("d", "M 0,-5 L 10,0 L 0,5")
-        .attr("fill", "#666")
-        .style("stroke", "none");
+    svg.append("defs")
+       .selectAll("marker")
+       .data(["end"])
+       .enter().append("marker")
+         .attr("id", "arrowhead")
+         .attr("viewBox", "-0 -5 10 10")
+         .attr("refX", 30) // Adjust refX as needed
+         .attr("refY", 0)
+         .attr("orient", "auto")
+         .attr("markerWidth", 8)
+         .attr("markerHeight", 8)
+         .attr("xoverflow", "visible")
+       .append("svg:path")
+         .attr("d", "M 0,-5 L 10,0 L 0,5")
+         .attr("fill", "#666")
+         .style("stroke", "none");
 
-    // Icon mapping for node labels
+    // Mapping icons based on node type.
     const iconMapping = {
-      "File": "📄",
-      "Company": "🏢",
-      "EventInput": "✅",
-      "Contract": "🤝"
+      company: "🏢",
+      pv_ag: "📄",
+      event: "📆",
+      moral_person: "👥"
+    };
+
+    // Colors for different node types
+    const colorMapping = {
+      company: "#1f78b4",      // blue
+      pv_ag: "#33a02c",        // green
+      event: "#e31a1c",        // red
+      moral_person: "#ff7f00"  // orange
     };
 
     // Fetch graph data from your API endpoint
     d3.json("http://127.0.0.1:8000/graph").then(graphData => {
+      // Create a mapping for nodes by id (using the API structure)
       const nodeById = new Map(graphData.nodes.map(d => [d.id, d]));
 
+      // Map edges from source_id/target_id to node objects
       const links = graphData.edges.map(d => ({
         source: nodeById.get(d.source_id),
         target: nodeById.get(d.target_id),
@@ -69,63 +92,63 @@
 
       const nodes = graphData.nodes;
 
+      // Create a simulation with forces
       const simulation = d3.forceSimulation(nodes)
-        .force("link", d3.forceLink(links).id(d => d.id).distance(170))
-        .force("charge", d3.forceManyBody().strength(-350))
-        .force("center", d3.forceCenter(width / 2, height / 2));
+                            .force("link", d3.forceLink(links).id(d => d.id).distance(170))
+                            .force("charge", d3.forceManyBody().strength(-350))
+                            .force("center", d3.forceCenter(width / 2, height / 2));
 
       // Draw links with arrow markers
       const link = svg.append("g")
-          .attr("class", "links")
-        .selectAll("line")
-        .data(links)
-        .enter().append("line")
-          .attr("class", "link")
-          .attr("marker-end", "url(#arrowhead)");
+                      .attr("class", "links")
+                      .selectAll("line")
+                      .data(links)
+                      .enter().append("line")
+                      .attr("class", "link")
+                      .attr("marker-end", "url(#arrowhead)");
 
       // Draw link labels
       const linkLabels = svg.append("g")
-          .attr("class", "link-labels")
-        .selectAll("text")
-        .data(links)
-        .enter().append("text")
-          .attr("class", "link-label")
-          .attr("dy", -10)
-          .text(d => d.label);
+                            .attr("class", "link-labels")
+                            .selectAll("text")
+                            .data(links)
+                            .enter().append("text")
+                            .attr("class", "link-label")
+                            .attr("dy", -10)
+                            .text(d => d.label);
 
       // Draw nodes
       const node = svg.append("g")
-          .attr("class", "nodes")
-        .selectAll("g")
-        .data(nodes)
-        .enter().append("g")
-          .call(drag(simulation));
+                      .attr("class", "nodes")
+                      .selectAll("g")
+                      .data(nodes)
+                      .enter().append("g")
+                      .call(drag(simulation));
 
-      // Node circles
+      // Append circles for nodes using colorMapping based on node type
       node.append("circle")
-        .attr("r", 25)
-        .attr("fill", "white")
-        .attr("stroke", "black")
-        .attr("stroke-width", 1.5);
+          .attr("r", 25)
+          .attr("fill", d => colorMapping[d.type] || "white")
+          .attr("stroke", "black")
+          .attr("stroke-width", 1.5);
 
-      // Icon labels inside nodes
+      // Append icon labels inside nodes based on type
       node.append("text")
-        .attr("text-anchor", "middle")
-        .attr("alignment-baseline", "middle")
-        .attr("font-size", 20)
-        .text(d => iconMapping[d.label] || d.label);
+          .attr("text-anchor", "middle")
+          .attr("alignment-baseline", "middle")
+          .attr("font-size", 20)
+          .text(d => iconMapping[d.type] || d.type);
 
-      // Tooltip for full node name
+      // Tooltip for the full node name
       node.append("title")
-        .text(d => d.name);
+          .text(d => d.name);
 
-      // Update positions on each tick
+      // Update positions on each tick of the simulation
       simulation.on("tick", () => {
-        link
-          .attr("x1", d => d.source.x)
-          .attr("y1", d => d.source.y)
-          .attr("x2", d => d.target.x)
-          .attr("y2", d => d.target.y);
+        link.attr("x1", d => d.source.x)
+            .attr("y1", d => d.source.y)
+            .attr("x2", d => d.target.x)
+            .attr("y2", d => d.target.y);
 
         node.attr("transform", d => `translate(${d.x},${d.y})`);
 
@@ -150,10 +173,20 @@
           d.fy = null;
         }
         return d3.drag()
-          .on("start", dragstarted)
-          .on("drag", dragged)
-          .on("end", dragended);
+                 .on("start", dragstarted)
+                 .on("drag", dragged)
+                 .on("end", dragended);
       }
+
+      // Update SVG dimensions and simulation center on window resize
+      window.addEventListener("resize", () => {
+        width = window.innerWidth;
+        height = window.innerHeight;
+        svg.attr("width", width)
+           .attr("height", height);
+        simulation.force("center", d3.forceCenter(width / 2, height / 2));
+        simulation.alpha(1).restart();
+      });
 
     }).catch(error => {
       console.error("Error fetching the graph data:", error);

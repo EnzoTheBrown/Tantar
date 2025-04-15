@@ -38,6 +38,8 @@ class Account(BaseSQLModel, table=True):
     users: list["User"] = Relationship(back_populates="account")
     companies: list["Company"] = Relationship(back_populates="account")
     files: list["File"] = Relationship(back_populates="account")
+    moral_persons: list["MoralPerson"] = Relationship(back_populates="account")
+    physical_persons: list["PhysicalPerson"] = Relationship(back_populates="account")
 
 
 class AccountInputModel(BaseModel):
@@ -116,7 +118,7 @@ class CompanyDetailsAPIModel(BaseModel):
     name: str
     naf_code: str
     activity: str
-    capital: float
+    capital: Optional[float]
     juridic_form: str
 
 
@@ -197,15 +199,19 @@ class SerFileAPIModel(BaseModel):
 
 
 class PhysicalPersonModel(BaseModel):
-    firstname: str = Field(description="firstname")
-    lastname: str = Field(description="lastname")
+    firstname: str = Field(description="firstname of the person")
+    lastname: str = Field(description="lastname of the person")
 
 
 class MoralPersonModel(BaseModel):
-    name: str = Field(description="The name of the moral person")
+    name: str = Field(
+        description="The name of the moral person, it can be a company or an organization"
+    )
 
 
 class PhysicalPerson(BaseSQLModel, table=True):
+    account_id: int = Field(foreign_key="account.id")
+    account: Account = Relationship(back_populates="physical_persons")
     firstname: str
     lastname: str
 
@@ -214,21 +220,13 @@ class PhysicalPerson(BaseSQLModel, table=True):
         return f"{self.firstname} {self.lastname}"
 
 
-class PhysicalPersonDBModel(BaseSQLModel, table=True):
-    firstname: str
-    lastname: str
-
-
 class MoralPerson(BaseSQLModel, table=True):
-    name: str
-
-
-class MoralPersonDBModel(BaseSQLModel, table=True):
-    name: str
     account_id: int = Field(foreign_key="account.id")
+    account: Account = Relationship(back_populates="moral_persons")
+    name: str
 
 
-Person = Union[PhysicalPerson, MoralPerson]
+Person = Union[PhysicalPersonModel, MoralPersonModel]
 
 
 """
@@ -239,12 +237,6 @@ Person = Union[PhysicalPerson, MoralPerson]
 class Event(FileChunk):
     text: str = Field(description="Full text describing the event")
     title: str = Field(description="Short text explaining the event", title=None)
-    physical_persons: List[PhysicalPerson] = Field(
-        description="The list of physical persons", default=[]
-    )
-    moral_persons: List[MoralPerson] = Field(
-        description="The list of moral persons", default=[]
-    )
     page_index: int = Field(description="The index of the page in the file")
     type: EventType = Field(description="The type of the event")
     label: JuridicCategory = Field(description="The category of the event")
@@ -432,6 +424,7 @@ class EdgeLabel(str, Enum):
     ORGANIZED = "ORGANIZED"
     AUTHORIZED = "AUTHORIZED"
     IS_MENTIONED = "IS_MENTIONED"
+    SIGNS = "SIGNS"
 
 
 class GraphEdge(SQLModel, table=True):

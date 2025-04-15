@@ -1,5 +1,5 @@
 from datetime import datetime
-from schemas.model import JuridicEvents, Event, FileMetadata
+from schemas.model import JuridicEvents, Event, FileMetadata, Person
 from typing import List
 from datetime import datetime
 
@@ -22,6 +22,11 @@ events_agent = Agent(
 document_information_agent = Agent(
     "openai:gpt-4o",
     result_type=FileMetadata,
+)
+
+persons_agent = Agent(
+    "openai:gpt-4o",
+    result_type=List[Person],
 )
 
 
@@ -73,3 +78,10 @@ async def extract_events(pages: List[str]) -> List[Event]:
     ]
     message = await events_agent.run("END", message_history=history)
     return message.data.events
+
+
+async def extract_persons(persons: List[Person], text: str) -> List[Person]:
+    message = await persons_agent.run(
+        f"Extract the persons in this text: {text}, if there is the person in that list return the extact name of the person: {persons}"
+    )
+    return message.data

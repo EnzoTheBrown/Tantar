@@ -1,0 +1,89 @@
+from enum import Enum
+from dataclasses import dataclass
+from typing import Any, Protocol, Type
+from schemas.file_model import (
+    EventTypeModel,
+    ContractTypeModel,
+    FileTypeModel,
+    ContractType,
+    FileType,
+)
+from schemas.model import (
+    JuridicEvents,
+    FileMetadata,
+)
+
+
+class AgentResponseStatus(Enum):
+    SUCCESS = "success"
+    ERROR = "error"
+
+
+@dataclass
+class AgentResponse:
+    data: Any
+    status: AgentResponseStatus
+    error: str
+    response_time: float
+    token_count: int
+
+
+@dataclass
+class Agent:
+    name: str
+    description: str
+    prompt: str
+    result_type: AgentResponse
+
+
+@dataclass
+class AgentRouting(Protocol):
+    agent: Agent
+    rules: list[tuple[Any, Agent]]
+    default_agent: Agent
+
+
+agent_file_classifier = Agent(
+    name="file_classifier",
+    description="Classify the file",
+    prompt="Classify the file",
+    result_type=FileTypeModel,
+)
+
+contract_classifier_agent = Agent(
+    name="contract_classifier",
+    description="Classify the contract",
+    prompt="Classify the contract",
+    result_type=ContractTypeModel,
+)
+
+event_classifier_agent = Agent(
+    name="event_classifier",
+    description="Classify the event",
+    prompt="Classify the event",
+    result_type=EventTypeModel,
+)
+
+event_parser_agent = Agent(
+    name="event_parser",
+    description="Parse the event",
+    prompt="Parse the event",
+    result_type=JuridicEvents,
+)
+
+document_information_agent = Agent(
+    name="document_information",
+    description="Extract the document information",
+    prompt="Extract the document information",
+    result_type=FileMetadata,
+)
+
+routing_classifier = AgentRouting(
+    agent=agent_file_classifier,
+    rules=[
+        (lambda: result_type: result_type == FileType.CONTRACT, contract_classifier_agent),
+        (lambda: result_type: result_type == FileType.PROCES_VERBAL_D_ASSEMBLEE_GENERALE, event_classifier_agent),
+    ],
+    default_agent=agent_file_classifier,
+)
+
