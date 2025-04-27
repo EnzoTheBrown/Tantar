@@ -33,6 +33,7 @@ def insert_contract_chunks(contract_chunks: List[ContractChunkInput]):
 def get_contract_chunks_in_vector_db(
     question: Optional[str] = None, metadata: Optional[str] = None, limit: int = 10
 ) -> List[ContractChunk]:
+    logger.info(f"Getting contract chunks from Pitantar with metadata: {metadata}")
     if question is None:
         search_query = contract_chunks_table.search()
     else:

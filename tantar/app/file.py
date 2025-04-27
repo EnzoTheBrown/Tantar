@@ -21,7 +21,7 @@ from .websocket import notify, notify_account, notify_account
 from typing import Optional, Annotated
 from schemas.websocket import WebSocketParsingError, WebSocketNewFileMessage
 from datetime import datetime
-from process_file import run_process_file
+from tantar.ai_graph import graph, DocumentState, PDFToImage
 
 logger = get_logger(__name__)
 file_router = APIRouter()
@@ -70,7 +70,9 @@ async def create_file(
         message=WebSocketNewFileMessage(file=file_model),
     )
     background_tasks.add_task(
-        run_process_file, new_file.original_id, account_id=user.account.original_id
+        graph.run,
+        PDFToImage(),
+        state=DocumentState(file_id=new_file.id, account_id=user.account.id),
     )
 
     return file_model

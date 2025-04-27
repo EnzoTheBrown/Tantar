@@ -1,5 +1,5 @@
 from schemas.file_model import ContractType
-from schemas.model import EventDBModel, EventType, ContractChunk
+from schemas.model import EventDBModel, EventType, ContractChunk, Event
 from tantar.vector_database import get_contract_chunks_in_vector_db
 from typing import List, Optional
 from datetime import timedelta
@@ -15,22 +15,24 @@ def within_6_months(event: EventDBModel) -> str:
 
 
 async def find_matching_contract_chunks(
-    event: EventDBModel,
+    account_id: str,
+    siren: str,
+    event: Event,
 ) -> Optional[List[ContractChunk]]:
     match event.type:
         case EventType.TRANSFERT_DE_SIEGE_SOCIAL:
             return get_contract_chunks_in_vector_db(
                 question=event.text,
                 metadata=f"""
-                        account_id='{event.account_id}'
-                    AND siren='{event.siren}'
+                        account_id='{account_id}'
+                    AND siren='{siren}'
                     AND (
-                           type='{ContractType.BAIL.value}'
-                        OR type='{ContractType.MISE_A_DISPOSITION_DE_LOCAL.value}'
-                        OR type='{ContractType.DOMICILIATION.value}'
-                        OR type='{ContractType.ACTE_DE_CESSION_D_UN_IMMEUBLE.value}'
-                        OR type='{ContractType.ACTE_DE_CESSION_D_UN_LOCAL.value}'
-                        OR type='{ContractType.CONTRAT_DE_SOUS_LOCATION.value}'
+                           type='{ContractType.BAIL.value.replace("'", "''")}'
+                        OR type='{ContractType.MISE_A_DISPOSITION_DE_LOCAL.value.replace("'", "''")}'
+                        OR type='{ContractType.DOMICILIATION.value.replace("'", "''")}'
+                        OR type='{ContractType.ACTE_DE_CESSION_D_UN_IMMEUBLE.value.replace("'", "''")}'
+                        OR type='{ContractType.ACTE_DE_CESSION_D_UN_LOCAL.value.replace("'", "''")}'
+                        OR type='{ContractType.CONTRAT_DE_SOUS_LOCATION.value.replace("'", "''")}'
                         )
                     AND {within_6_months(event)}
                 """,
@@ -39,9 +41,9 @@ async def find_matching_contract_chunks(
             return get_contract_chunks_in_vector_db(
                 question=event.text,
                 metadata=f"""
-                        account_id='{event.account_id}'
-                    AND siren='{event.siren}'
-                    AND type='{ContractType.PRET_BANCAIRE.value}'
+                        account_id='{account_id}'
+                    AND siren='{siren}'
+                    AND type='{ContractType.PRET_BANCAIRE.value.replace("'", "''")}'
                     AND {within_6_months(event)}
                 """,
             )
@@ -49,9 +51,9 @@ async def find_matching_contract_chunks(
             return get_contract_chunks_in_vector_db(
                 question=event.text,
                 metadata=f"""
-                        account_id='{event.account_id}'
-                    AND siren='{event.siren}'
-                    AND type='{ContractType.ACTE_DE_CESSION_D_UN_IMMEUBLE.value}'
+                        account_id='{account_id}'
+                    AND siren='{siren}'
+                    AND type='{ContractType.ACTE_DE_CESSION_D_UN_IMMEUBLE.value.replace("'", "''")}'
                     AND {within_6_months(event)}
                 """,
             )
@@ -59,9 +61,9 @@ async def find_matching_contract_chunks(
             return get_contract_chunks_in_vector_db(
                 question=event.text,
                 metadata=f"""
-                        account_id='{event.account_id}'
-                    AND siren='{event.siren}'
-                    AND type='{ContractType.ACTE_DE_CESSION_D_UN_IMMEUBLE.value}'
+                        account_id='{account_id}'
+                    AND siren='{siren}'
+                    AND type='{ContractType.ACTE_DE_CESSION_D_UN_IMMEUBLE.value.replace("'", "''")}'
                     AND {within_6_months(event)}
                 """,
             )
@@ -69,9 +71,9 @@ async def find_matching_contract_chunks(
             return get_contract_chunks_in_vector_db(
                 question=event.text,
                 metadata=f"""
-                        account_id='{event.account_id}'
-                    AND siren='{event.siren}'
-                    AND type='{ContractType.ACTE_DE_CESSION_D_UN_LOCAL.value}'
+                        account_id='{account_id}'
+                    AND siren='{siren}'
+                    AND type='{ContractType.ACTE_DE_CESSION_D_UN_LOCAL.value.replace("'", "''")}'
                     AND {within_6_months(event)}
                 """,
             )
@@ -79,14 +81,14 @@ async def find_matching_contract_chunks(
             return get_contract_chunks_in_vector_db(
                 question=event.text,
                 metadata=f"""
-                        account_id='{event.account_id}'
-                    AND siren='{event.siren}'
+                        account_id='{account_id}'
+                    AND siren='{siren}'
                     AND (
-                           type='{ContractType.BON_DE_SOUSCRIPTION.value}'
-                        OR type='{ContractType.BON_DE_SOUSCRIPTION_D_ACTION.value}'
-                        OR type='{ContractType.ACTE_DE_CESSION_D_ACTION.value}'
-                        OR type='{ContractType.BULLETIN_DE_SOUSCRIPTION.value}'
-                        OR type='{ContractType.PV_DE_CONSTATATION_D_AUGMENTATION_DE_CAPITAL.value}'
+                           type='{ContractType.BON_DE_SOUSCRIPTION.value.replace("'", "''")}'
+                        OR type='{ContractType.BON_DE_SOUSCRIPTION_D_ACTION.value.replace("'", "''")}'
+                        OR type='{ContractType.ACTE_DE_CESSION_D_ACTION.value.replace("'", "''")}'
+                        OR type='{ContractType.BULLETIN_DE_SOUSCRIPTION.value.replace("'", "''")}'
+                        OR type='{ContractType.PV_DE_CONSTATATION_D_AUGMENTATION_DE_CAPITAL.value.replace("'", "''")}'
                     )
                     AND {within_6_months(event)}
                 """,
@@ -95,13 +97,13 @@ async def find_matching_contract_chunks(
             return get_contract_chunks_in_vector_db(
                 question=event.text,
                 metadata=f"""
-                        account_id='{event.account_id}'
-                    AND siren='{event.siren}'
+                        account_id='{account_id}'
+                    AND siren='{siren}'
                     AND (
-                           type='{ContractType.PROTOCOL_DE_CESSION.value}'
-                        OR type='{ContractType.FORMULAIRE_2759.value}'
-                        OR type='{ContractType.ORDRE_DE_MOUVEMENT_DE_TITRES.value}'
-                        OR type='{ContractType.ACTE_DE_CESSION_D_ACTION.value}'
+                           type='{ContractType.PROTOCOL_DE_CESSION.value.replace("'", "''")}'
+                        OR type='{ContractType.FORMULAIRE_2759.value.replace("'", "''")}'
+                        OR type='{ContractType.ORDRE_DE_MOUVEMENT_DE_TITRES.value.replace("'", "''")}'
+                        OR type='{ContractType.ACTE_DE_CESSION_D_ACTION.value.replace("'", "''")}'
                     )
                     AND {within_6_months(event)}
                 """,
@@ -110,9 +112,9 @@ async def find_matching_contract_chunks(
             return get_contract_chunks_in_vector_db(
                 question=event.text,
                 metadata=f"""
-                        account_id='{event.account_id}'
-                    AND siren='{event.siren}'
-                    AND type='{ContractType.CONTRAT_D_EMISSION_D_OBLIGATIONS.value}'
+                        account_id='{account_id}'
+                    AND siren='{siren}'
+                    AND type='{ContractType.CONTRAT_D_EMISSION_D_OBLIGATIONS.value.replace("'", "''")}'
                     AND {within_6_months(event)}
                 """,
             )
@@ -120,9 +122,9 @@ async def find_matching_contract_chunks(
             return get_contract_chunks_in_vector_db(
                 question=event.text,
                 metadata=f"""
-                        account_id='{event.account_id}'
-                    AND siren='{event.siren}'
-                    AND type='{ContractType.PLAN_D_ATTRIBUTION_D_ACTION_GRATUITE.value}'
+                        account_id='{account_id}'
+                    AND siren='{siren}'
+                    AND type='{ContractType.PLAN_D_ATTRIBUTION_D_ACTION_GRATUITE.value.replace("'", "''")}'
                     AND {within_6_months(event)}
                 """,
             )
@@ -130,9 +132,9 @@ async def find_matching_contract_chunks(
             return get_contract_chunks_in_vector_db(
                 question=event.text,
                 metadata=f"""
-                        account_id='{event.account_id}'
-                    AND siren='{event.siren}'
-                    AND type='{ContractType.ETAT_DES_INSCRIPTIONS_DES_PRIVILEGES_ET_NANTISSEMENTS.value}'
+                        account_id='{account_id}'
+                    AND siren='{siren}'
+                    AND type='{ContractType.ETAT_DES_INSCRIPTIONS_DES_PRIVILEGES_ET_NANTISSEMENTS.value.replace("'", "''")}'
                     AND {within_6_months(event)}
                 """,
             )
@@ -140,9 +142,9 @@ async def find_matching_contract_chunks(
             return get_contract_chunks_in_vector_db(
                 question=event.text,
                 metadata=f"""
-                        account_id='{event.account_id}'
-                    AND siren='{event.siren}'
-                    AND (type='{ContractType.ACTE_DE_CESSION_DE_MARQUE.value}')
+                        account_id='{account_id}'
+                    AND siren='{siren}'
+                    AND (type='{ContractType.ACTE_DE_CESSION_DE_MARQUE.value.replace("'", "''")}')
                     AND {within_6_months(event)}
                 """,
             )
@@ -150,9 +152,9 @@ async def find_matching_contract_chunks(
             return get_contract_chunks_in_vector_db(
                 question=event.text,
                 metadata=f"""
-                        account_id='{event.account_id}'
-                    AND siren='{event.siren}'
-                    AND (type='{ContractType.ACTE_DE_CESSION_DE_MARQUE.value}')
+                        account_id='{account_id}'
+                    AND siren='{siren}'
+                    AND (type='{ContractType.ACTE_DE_CESSION_DE_MARQUE.value.replace("'", "''")}')
                     AND {within_6_months(event)}
                 """,
             )
@@ -160,9 +162,9 @@ async def find_matching_contract_chunks(
             return get_contract_chunks_in_vector_db(
                 question=event.text,
                 metadata=f"""
-                        account_id='{event.account_id}'
+                        account_id='{account_id}'
                     AND siren='{event.siren}'
-                    AND (type='{ContractType.RAPPORT_SPECIAL_DU_COMMISSAIRE_AU_COMPTES.value}')
+                    AND (type='{ContractType.RAPPORT_SPECIAL_DU_COMMISSAIRE_AU_COMPTES.value.replace("'", "''")}')
                     AND {within_6_months(event)}
                 """,
             )

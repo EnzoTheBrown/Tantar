@@ -143,7 +143,8 @@ class FileMetadata(BaseModel):
     title: str = Field(description="Le titre du document")
     type: FileType = Field(description="Le type de document")
     siren: Annotated[Optional[str], BeforeValidator(format_siren)] = Field(
-        description="The siren of the company", default=None
+        description="The siren of the company If this is a contract this must be the offeree not the offeror",
+        default=None,
     )
     date: Optional[datetime] = Field(description="The date of the file", default=None)
     name: Optional[str] = Field(description="The name of the company", default=None)
@@ -205,7 +206,7 @@ class PhysicalPersonModel(BaseModel):
 
 class MoralPersonModel(BaseModel):
     name: str = Field(
-        description="The name of the moral person, it can be a company or an organization"
+        description="The name of a company, can't be something else than a company"
     )
 
 
@@ -388,6 +389,7 @@ class NodeType(str, Enum):
     EVENT = "event"
     MORAL_PERSON = "moral_person"
     PHYSICAL_PERSON = "physical_person"
+    MVT = "registre de mouvement de titres"
 
 
 class GraphNode(SQLModel, table=True):
@@ -425,6 +427,7 @@ class EdgeLabel(str, Enum):
     AUTHORIZED = "AUTHORIZED"
     IS_MENTIONED = "IS_MENTIONED"
     SIGNS = "SIGNS"
+    BELONGS_TO = "BELONGS_TO"
 
 
 class GraphEdge(SQLModel, table=True):

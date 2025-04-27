@@ -1,5 +1,6 @@
 from fastapi import HTTPException, status, Depends, Response, APIRouter
-from tantar.database import User, get_db
+from tantar.database import get_db
+from schemas.model import User
 from fastapi.security import OAuth2PasswordRequestForm
 from datetime import timedelta
 from .utils import ACCESS_TOKEN_EXPIRE_MINUTES, create_access_token
@@ -10,23 +11,21 @@ import logfire
 
 logger = get_logger(__name__)
 
-connection_attempts = logfire.metric_counter('connection_attempts')
-connection_successes = logfire.metric_counter('connection_successes')
-user_count = logfire.metric_counter('user_count')
-company_count = logfire.metric_counter('company_count')
-file_count = logfire.metric_counter('file_count')
-event_count = logfire.metric_counter('event_count')
+connection_attempts = logfire.metric_counter("connection_attempts")
+connection_successes = logfire.metric_counter("connection_successes")
+user_count = logfire.metric_counter("user_count")
+company_count = logfire.metric_counter("company_count")
+file_count = logfire.metric_counter("file_count")
+event_count = logfire.metric_counter("event_count")
 
 login_router = APIRouter()
 
-@login_router.post(
-    '/login',
-    status_code=status.HTTP_201_CREATED
-)
+
+@login_router.post("/login", status_code=status.HTTP_201_CREATED)
 async def login(
     form_data: OAuth2PasswordRequestForm = Depends(),
     response: Response = Response(),
-    db = Depends(get_db)
+    db=Depends(get_db),
 ) -> dict:
     connection_attempts.add(1)
     logger.info(f"Login attempt for {form_data.username}")
@@ -48,12 +47,12 @@ async def login(
     access_token = create_access_token(
         data={
             "sub": user_uuid,
-            "companies": [str(company.original_id) for company in user.account.companies],
+            "companies": [
+                str(company.original_id) for company in user.account.companies
+            ],
             "account_id": str(user.account.original_id),
         },
-        expires_delta=access_token_expires
+        expires_delta=access_token_expires,
     )
     connection_successes.add(1)
     return {"access_token": access_token, "token_type": "bearer"}
-
-

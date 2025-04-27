@@ -9,7 +9,8 @@ from schemas.model import (
     NodeType,
 )
 from typing import Union, Optional
-from sqlmodel import select
+from sqlmodel import select, Session
+from tantar.database import engine
 
 Node = Union[Company, File, EventInput, MoralPerson, PhysicalPerson]
 
@@ -28,9 +29,12 @@ def create_node(db, entity: Node, type: NodeType) -> GraphNode:
 
 
 def get_node(db, original_id: str) -> Optional[GraphNode]:
-    return db.exec(
+    node = db.exec(
         select(GraphNode).where(GraphNode.original_id == original_id)
     ).first()
+    if node is None:
+        raise ValueError("Node not found")
+    return node
 
 
 def create_edge(db, source: Node, target: Node, label: str) -> GraphEdge:
@@ -43,6 +47,7 @@ def create_edge(db, source: Node, target: Node, label: str) -> GraphEdge:
     edge = GraphEdge(source=source_node, target=target_node, label=label)
     db.add(edge)
     db.commit()
+    db.refresh(edge)
     return edge
 
 
