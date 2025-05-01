@@ -58,11 +58,16 @@ def get_nodes(db) -> list[GraphNode]:
 
 def get_neighbors(
     db, source_id: Optional[str], label: Optional[str] = None
-) -> Optional[List[GraphEdge]]:
+) -> Optional[List[GraphNode]]:
     node = db.exec(select(GraphNode).where(GraphNode.original_id == source_id)).first()
     if node is None:
         raise ValueError("Node not found")
     clauses = (GraphEdge.source_id == node.id) if source_id else True
     if label:
         clauses &= GraphEdge.label == label
-    return db.exec(select(GraphEdge).where(clauses)).all()
+    nodes = db.exec(
+        select(GraphNode)
+        .join(GraphEdge, GraphEdge.target_id == GraphNode.id)
+        .where(clauses)
+    ).all()
+    return nodes
