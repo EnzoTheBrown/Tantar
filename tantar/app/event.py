@@ -72,7 +72,7 @@ async def get_events_(
         account_id=db_account.original_id,
         question=question,
         company_id=company_id,
-        label=JuridicCategory[label] if label is not None else None,
+        label=JuridicCategory._value2member_map_[label] if label is not None else None,
         k=k,
         start_date=start_date,
         end_date=end_date,
