@@ -8,7 +8,7 @@ from schemas.model import (
     PhysicalPerson,
     NodeType,
 )
-from typing import Union, Optional
+from typing import Union, Optional, List
 from sqlmodel import select, Session
 from tantar.database import engine
 
@@ -51,11 +51,18 @@ def create_edge(db, source: Node, target: Node, label: str) -> GraphEdge:
     return edge
 
 
-def get_neighbors(db, node: Node) -> list[GraphNode]:
-    node = get_node(db, node.original_id)
-    edge = db.exec(select(GraphEdge).where(GraphEdge.source == node)).all()
-    nodes = [
-        db.exec(select(GraphNode).where(GraphNode.id == e.target_id)).first()
-        for e in edge
-    ]
+def get_nodes(db) -> list[GraphNode]:
+    nodes = db.exec(select(GraphNode)).all()
     return nodes
+
+
+def get_neighbors(
+    db, source_id: Optional[str], label: Optional[str] = None
+) -> Optional[List[GraphEdge]]:
+    node = db.exec(select(GraphNode).where(GraphNode.original_id == source_id)).first()
+    if node is None:
+        raise ValueError("Node not found")
+    clauses = (GraphEdge.source_id == node.id) if source_id else True
+    if label:
+        clauses &= GraphEdge.label == label
+    return db.exec(select(GraphEdge).where(clauses)).all()
