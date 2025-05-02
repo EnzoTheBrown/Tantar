@@ -312,7 +312,7 @@ class ExtractDocumentMetadata(BaseNode[DocumentState]):
             )
             add_company_to_file(db, file, company)
             if created:
-                company_details = create_company_details(company)
+                # company_details = create_company_details(company)
                 save_company_details(db, company_details)
             db.refresh(company)
             context.state.company_id = company.id

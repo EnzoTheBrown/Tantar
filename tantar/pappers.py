@@ -26,7 +26,7 @@ def get_pappers_company(siren: str) -> PappersCompany:
     return PappersCompany(**response.json())
 
 
-def create_company_details(company: Company) -> CompanyDetails:
+def create_company_details_(company: Company) -> CompanyDetails:
     pappers_company = get_pappers_company(company.siren)
     logger.info(
         f"We got new elements from pappers to complete company details: {pappers_company.siren} {pappers_company.name}"
@@ -39,4 +39,16 @@ def create_company_details(company: Company) -> CompanyDetails:
         capital=pappers_company.capital,
         company=company,
         juridic_form=pappers_company.juridic_form,
+    )
+
+
+def create_company_details(company: Company) -> CompanyDetails:
+    return CompanyDetails(
+        siren=company.siren,
+        name=company.name,
+        naf_code="",
+        activity="",
+        capital="",
+        company=company,
+        juridic_form="SAS, Société par actions simplifiée",
     )
