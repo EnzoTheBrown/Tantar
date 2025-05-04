@@ -61,6 +61,9 @@ from sqlmodel import select, Session
 from uuid import uuid4
 from tantar.controller import get_or_create_company
 from tantar.pappers import create_company_details
+from tantar.utils.logger import get_logger
+
+logger = get_logger(__name__)
 
 s3 = SETTINGS.s3.client
 
@@ -204,15 +207,17 @@ async def contract_event_fit(
         event=event,
     )
     if chunks:
+        logger.info("Found matching contract chunks")
         contract = db.exec(
-            select(Contract).where(Contract.id == chunks[0].original_id)
+            select(Contract).join(File).where(File.original_id == chunks[0].file_id)
         ).first()
         if contract:
-            AuthorizedContract(
+            logger.info("Found matching contract")
+            authorized_contract = AuthorizedContract(
                 contract=contract,
                 event=event,
             )
-            db.add(AuthorizedContract)
+            db.add(authorized_contract)
             db.commit()
 
 

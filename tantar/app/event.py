@@ -7,6 +7,7 @@ from schemas.relational import (
     EventCategoriesAPIModel,
     Account,
     Event,
+    Contract,
 )
 from schemas.vector import EventInput
 from tantar.database import get_db, Session
@@ -16,6 +17,7 @@ from tantar.utils.logger import get_logger
 from tantar.vector_database import get_events, post_event
 from .authenticate import get_current_user
 import uuid
+from typing import List
 
 logger = get_logger(__name__)
 
@@ -95,3 +97,18 @@ async def get_events_(
 )
 def get_categories():
     return {category.name: category.value for category in JuridicCategory}
+
+
+@event_router.get(
+    "/events/{original_id}/authorized_conracts",
+    response_model=List[Contract],
+)
+def get_authorized_contracts(
+    original_id: str,
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    event = db.exec(select(Event).where(Event.original_id == original_id)).first()
+    if not event:
+        raise HTTPException(status_code=404, detail="Event not found")
+    return event.authorized_contracts
