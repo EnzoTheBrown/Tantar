@@ -1,5 +1,5 @@
 from fastapi import Depends, HTTPException, APIRouter, Query
-from schemas.model import (
+from schemas.relational import (
     Company,
     File,
     JuridicCategory,
@@ -7,9 +7,8 @@ from schemas.model import (
     EventCategoriesAPIModel,
     Account,
     Event,
-    EventInput,
-    EventDBModel,
 )
+from schemas.vector import EventInput
 from tantar.database import get_db, Session
 from sqlmodel import select
 from typing import Optional
@@ -82,7 +81,7 @@ async def get_events_(
     events_db = []
     for event in events:
         event_db = db.exec(
-            select(EventDBModel).where(EventDBModel.original_id == event.original_id)
+            select(Event).where(Event.original_id == event.original_id)
         ).first()
         events_db.append(event_db)
     return EventCategoriesAPIModel(

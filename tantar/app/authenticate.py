@@ -4,7 +4,7 @@ from passlib.context import CryptContext
 from tantar.utils.logger import get_logger
 from tantar.settings import SETTINGS
 from fastapi import HTTPException, status, Depends
-from schemas.model import User, Account
+from schemas.relational import User, Account
 from tantar.database import get_db, Session
 from sqlmodel import select
 from .utils import ALGORITHM

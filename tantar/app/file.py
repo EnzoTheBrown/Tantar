@@ -10,7 +10,7 @@ from fastapi import (
     BackgroundTasks,
 )
 from fastapi.responses import StreamingResponse
-from schemas.model import FileAPIModel, Company, File, User
+from schemas.relational import FileAPIModel, Company, File, User
 from tantar.database import get_db, Session
 from sqlmodel import select
 from tantar.settings import SETTINGS
@@ -21,7 +21,7 @@ from .websocket import notify, notify_account, notify_account
 from typing import Optional, Annotated
 from schemas.websocket import WebSocketParsingError, WebSocketNewFileMessage
 from datetime import datetime
-from tantar.ai_graph import graph, DocumentState, PDFToImage
+from tantar.process_file import process_file
 
 logger = get_logger(__name__)
 file_router = APIRouter()
@@ -70,9 +70,9 @@ async def create_file(
         message=WebSocketNewFileMessage(file=file_model),
     )
     background_tasks.add_task(
-        graph.run,
-        PDFToImage(),
-        state=DocumentState(file_id=new_file.id, account_id=user.account.id),
+        process_file,
+        db=db,
+        file=new_file,
     )
 
     return file_model

@@ -12,5 +12,10 @@ def pdf2images(key, company_id):
         FunctionName="pdf_to_image",
         Payload=bytes(json.dumps({"key": key, "company_id": company_id}), "utf-8"),
     )
-    images = json.loads(response["Payload"].read())
-    return json.loads(images["body"])
+    try:
+        images = json.loads(response["Payload"].read())
+        body = json.loads(images["body"])
+    except Exception as e:
+        logger.error(f"Error decoding lambda response: {images}")
+        raise e
+    return body

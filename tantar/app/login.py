@@ -1,6 +1,6 @@
 from fastapi import HTTPException, status, Depends, Response, APIRouter
 from tantar.database import get_db
-from schemas.model import User
+from schemas.relational import User, UserAPIModel
 from fastapi.security import OAuth2PasswordRequestForm
 from datetime import timedelta
 from .utils import ACCESS_TOKEN_EXPIRE_MINUTES, create_access_token

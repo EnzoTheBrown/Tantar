@@ -6,6 +6,8 @@ class FileType(str, Enum):
     CONTRAT = "CONTRAT"
     PROCES_VERBAL_D_ASSEMBLEE_GENERALE = "Proces verbal d'assemblee generale"
     REGISTRE_DE_MOUVEMENT_DE_TITRES = "Registre de mouvement de titres"
+    ORDRE_DE_MOUVEMENT_DE_TITRES = "Ordre de mouvement de titres"
+    STATUTS = "Statuts"
 
 
 class FileTypeModel(BaseModel):

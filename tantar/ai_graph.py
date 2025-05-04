@@ -5,13 +5,17 @@ from tantar.model.tokenizer import tokenize_paragraphs
 from pydantic_graph import BaseNode, End, Graph, GraphRunContext
 from dataclasses import dataclass
 from typing import List, Optional, Tuple, Any
-from tantar.model.classifier import classify_file, classify_contract
+from tantar.model.classifier import (
+    classify_file,
+    classify_contract,
+    classify_person_exists,
+    person_exists_agent,
+)
 from tantar.model.parser import (
     extract_events,
     extract_shares_agent,
     Share,
     extract_relationships,
-    RelationShip,
     extract_document_metadata,
     extract_persons,
     extract_contract_parties,
@@ -26,6 +30,7 @@ from schemas.model import (
     NodeType,
     PhysicalPerson,
     MoralPerson,
+    RelationShip,
 )
 from tantar.pdf_to_image import pdf2images
 from tantar.model.ocr import get_blocks, get_page_plane_text
@@ -35,6 +40,10 @@ from uuid import uuid4
 from tantar.vector_database import (
     post_event,
     post_contract_chunk,
+    insert_moral_person,
+    get_moral_persons,
+    insert_physical_person,
+    get_physical_persons,
 )
 from tantar.controller import (
     get_or_create_company,
@@ -121,7 +130,7 @@ class ExtractPersonsOnEvents(BaseNode[DocumentState]):
         for event_id in event_ids:
             with Session(engine) as db:
                 event = get_event(db, event_id)
-                persons += await extract_persons(event)
+                persons += await extract_persons(event.text)
                 for person in persons:
                     if isinstance(person, PhysicalPerson):
                         create_node(db, person, NodeType.PHYSICAL_PERSON)
@@ -131,6 +140,50 @@ class ExtractPersonsOnEvents(BaseNode[DocumentState]):
                         create_edge(db, event, person, EdgeLabel.IS_MENTIONED)
         context.state.persons = persons
         return ContractEventFit()
+
+
+@dataclass
+class ExtractPersonsOnDocument(BaseNode[DocumentState]):
+    state_name: str = "extract_persons_on_document"
+    description: str = "Extraction des personnes sur le document"
+
+    async def run(self, context: GraphRunContext) -> End:
+        if context.state.pages is None:
+            raise ValueError("Pages not found in context state.")
+        persons = await extract_persons(context.state.pages)
+        context.state.persons = persons
+        with Session(engine) as db:
+            for person in persons:
+                if isinstance(person, PhysicalPerson):
+                    candidates = get_physical_persons(
+                        question=person.name,
+                        metadata={"account_id": context.state.account_id},
+                    )
+                elif isinstance(person, MoralPerson):
+                    candidates = get_moral_persons(
+                        question=person.name,
+                        metadata={"account_id": context.state.account_id},
+                    )
+                person_original_id = classify_person_exists(person.name, candidates)
+                if person_original_id:
+                    person.original_id = person_original_id
+                    create_edge(
+                        db,
+                        get_file(db, context.state.file_id),
+                        get_physical_persons(person_original_id),
+                        EdgeLabel.IS_MENTIONED,
+                    )
+                else:
+                    if isinstance(person, PhysicalPerson):
+                        person = save_physical_person(
+                            db, person, account_id=context.state.account_id
+                        )
+                    elif isinstance(person, MoralPerson):
+                        person = save_moral_person(
+                            db, person, account_id=context.state.account_id
+                        )
+
+        return End()
 
 
 @dataclass
@@ -187,6 +240,16 @@ class ExtractRelationships(BaseNode[DocumentState]):
             raise ValueError("Pages not found in context state.")
         relationships = await extract_relationships(context.state.pages)
         context.state.relationships = relationships
+        for relationship in relationships:
+            with Session(engine) as db:
+                company = get_company(db, context.state.company_id)
+                person = save_person(
+                    db, relationship.source, account_id=context.state.account_id
+                )
+                create_node(db, person, NodeType.PHYSICAL_PERSON)
+                edge_label = EdgeLabel[relationship.relationship.name]
+                create_edge(db, company, person, edge_label)
+
         return End(data=relationships)
 
 
@@ -304,6 +367,9 @@ class ExtractDocumentMetadata(BaseNode[DocumentState]):
             return End(data=None)
         with Session(engine) as db:
             file = get_file(db, context.state.file_id)
+            file.type = context.state.type
+            db.add(file)
+            db.commit()
             created, company = get_or_create_company(
                 db,
                 name=metadata.name or "",
@@ -312,7 +378,7 @@ class ExtractDocumentMetadata(BaseNode[DocumentState]):
             )
             add_company_to_file(db, file, company)
             if created:
-                # company_details = create_company_details(company)
+                company_details = create_company_details(company)
                 save_company_details(db, company_details)
             db.refresh(company)
             context.state.company_id = company.id
@@ -326,6 +392,10 @@ class ExtractDocumentMetadata(BaseNode[DocumentState]):
                     create_edge(db, file, company, EdgeLabel.ORGANIZED)
                     next_state = ExtractEvents()
                 case FileType.REGISTRE_DE_MOUVEMENT_DE_TITRES:
+                    create_node(db, file, NodeType.MVT)
+                    create_edge(db, file, company, EdgeLabel.BELONGS_TO)
+                    next_state = ExtractShares()
+                case FileType.ORDRE_DE_MOUVEMENT_DE_TITRES:
                     create_node(db, file, NodeType.MVT)
                     create_edge(db, file, company, EdgeLabel.BELONGS_TO)
                     next_state = ExtractShares()

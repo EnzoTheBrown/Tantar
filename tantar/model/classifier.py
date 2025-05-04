@@ -1,7 +1,7 @@
 from pydantic_ai import Agent
 from pydantic_ai.messages import UserPromptPart, ModelRequest, SystemPromptPart
-from typing import List
-from schemas.model import Event
+from typing import List, Optional
+from schemas.relational import Event, Person
 from schemas.file_model import (
     EventTypeModel,
     ContractTypeModel,
@@ -26,6 +26,11 @@ contract_classifier_agent = Agent(
 event_classifier_agent = Agent(
     "openai:gpt-4o",
     result_type=EventTypeModel,
+)
+
+person_exists_agent = Agent(
+    "openai:gpt-4o",
+    result_type=Optional[str],
 )
 
 
@@ -82,5 +87,12 @@ async def classify_contract(pages: List[str]) -> ContractType:
 async def classify_juridic_event(event: Event) -> EventTypeModel:
     result = await event_classifier_agent.run(
         f'Classify the event "{event.title}" "{event.text}"'
+    )
+    return result.data
+
+
+async def classify_person_exists(name: str, persons: List[Person]) -> Optional[str]:
+    result = await person_exists_agent.run(
+        f'Within the context of the following persons: {", ".join([f"name: {person.name} id: {person.original_id}" for person in persons])}, does the person "{name}" exist? if yes, return the id of the person, if no, return None'
     )
     return result.data

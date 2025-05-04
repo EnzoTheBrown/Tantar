@@ -1,5 +1,5 @@
 from typing import Annotated
-from schemas.model import (
+from schemas.relational import (
     Account,
     AccountInputModel,
     AccountAPIModel,

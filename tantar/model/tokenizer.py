@@ -1,4 +1,4 @@
-from schemas.model import FileChunk
+from schemas.vector import FileChunk
 from typing import Any, List
 
 

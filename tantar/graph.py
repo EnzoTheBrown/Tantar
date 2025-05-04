@@ -7,12 +7,25 @@ from schemas.model import (
     MoralPerson,
     PhysicalPerson,
     NodeType,
+    Share,
+    RelationShipModel,
+    Role,
+    Shares,
 )
 from typing import Union, Optional, List
-from sqlmodel import select, Session
-from tantar.database import engine
+from sqlmodel import select
 
-Node = Union[Company, File, EventInput, MoralPerson, PhysicalPerson]
+Node = Union[
+    Company,
+    File,
+    EventInput,
+    MoralPerson,
+    PhysicalPerson,
+    Share,
+    RelationShipModel,
+    Role,
+    Shares,
+]
 
 
 def create_node(db, entity: Node, type: NodeType) -> GraphNode:

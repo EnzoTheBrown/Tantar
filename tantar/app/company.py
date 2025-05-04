@@ -1,5 +1,5 @@
 from typing import List
-from schemas.model import Company, User, CompanyInputModel, CompanyAPIModel
+from schemas.relational import Company, User, CompanyInputModel, CompanyAPIModel
 from tantar.database import get_db, Session
 from fastapi import Depends, HTTPException, APIRouter
 from pydantic import BaseModel

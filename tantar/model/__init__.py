@@ -6,7 +6,9 @@ from .tokenizer import tokenize_paragraphs
 from .classifier import classify_file, FileType, classify_contract
 from .ocr import get_blocks, get_page_plane_text
 from typing import List, Optional, Any
-from schemas.model import Contract, FileChunk, FileMetadata
+from schemas.relational import Contract
+from schemas.objects import FileMetadata
+from schemas.vector import FileChunk
 from pydantic import BaseModel
 
 logger = get_logger(__name__)

@@ -1,5 +1,5 @@
 from fastapi import Depends, APIRouter, HTTPException
-from schemas.model import User, UserInputModel, UserAPIModel, Account
+from schemas.relational import User, UserInputModel, UserAPIModel, Account
 from tantar.database import get_db, Session
 from sqlmodel import select
 from tantar.utils.logger import get_logger

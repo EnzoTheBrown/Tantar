@@ -1,11 +1,12 @@
 from schemas.file_model import ContractType
-from schemas.model import EventDBModel, EventType, ContractChunk, Event
+from schemas.relational import Event, EventType
+from schemas.vector import ContractChunk
 from tantar.vector_database import get_contract_chunks_in_vector_db
 from typing import List, Optional
 from datetime import timedelta
 
 
-def within_6_months(event: EventDBModel) -> str:
+def within_6_months(event: Event) -> str:
     """Days in lanceDB are in format 'YYYY-MM-DD'"""
     if event.date is None:
         return "1 = 1"

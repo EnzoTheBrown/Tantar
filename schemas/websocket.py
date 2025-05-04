@@ -1,4 +1,4 @@
-from .model import CompanyAPIModel, Event, FileAPIModel
+from .relational import CompanyAPIModel, Event, FileAPIModel
 from pydantic import BaseModel
 
 

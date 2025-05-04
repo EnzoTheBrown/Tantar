@@ -1,7 +1,7 @@
 import requests
 from pydantic import BaseModel, Field
 from tantar.settings import SETTINGS
-from schemas.model import CompanyDetails, Company
+from schemas.relational import CompanyDetails, Company
 from typing import Optional
 from tantar.utils.logger import get_logger
 
@@ -48,7 +48,7 @@ def create_company_details(company: Company) -> CompanyDetails:
         name=company.name,
         naf_code="",
         activity="",
-        capital="",
+        capital=1000,
         company=company,
         juridic_form="SAS, Société par actions simplifiée",
     )

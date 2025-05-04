@@ -1,12 +1,15 @@
 import lancedb
 from typing import List, Optional
-from schemas.model import (
-    VectorEvent,
+from schemas.vector import (
+    EventVector,
     EventInput,
     ContractChunk,
     ContractChunkInput,
-    Event,
     JuridicCategory,
+    MoralPersonVector,
+    PhysicalPersonVector,
+    MoralPersonInput,
+    PhysicalPersonInput,
 )
 from tantar.utils.logger import get_logger
 
@@ -23,7 +26,23 @@ except Exception as e:
 try:
     events_table = db.open_table("events")
 except Exception as e:
-    events_table = db.create_table("events", schema=VectorEvent)
+    events_table = db.create_table("events", schema=EventVector)
+
+
+try:
+    persons_table = db.open_table("moral_persons")
+except Exception as e:
+    logger.info("Creating persons table")
+    persons_table = db.create_table("moral_persons", schema=MoralPersonVector)
+
+
+try:
+    physical_persons_table = db.open_table("physical_persons")
+except Exception as e:
+    logger.info("Creating physical persons table")
+    physical_persons_table = db.create_table(
+        "physical_persons", schema=PhysicalPersonVector
+    )
 
 
 def insert_contract_chunks(contract_chunks: List[ContractChunkInput]):
@@ -49,14 +68,14 @@ def insert_events_in_vector_db(events: List[EventInput]):
 
 def get_events_in_vector_db(
     question: Optional[str] = None, metadata: Optional[str] = None, limit: int = 10
-) -> List[VectorEvent]:
+) -> List[EventVector]:
     if question is None:
         search_query = events_table.search()
     else:
         search_query = events_table.search(question)
     if metadata is not None:
         search_query = search_query.where(metadata)
-    return search_query.limit(limit).to_pydantic(VectorEvent)
+    return search_query.limit(limit).to_pydantic(EventVector)
 
 
 def get_events(
@@ -68,7 +87,7 @@ def get_events(
     start_date: Optional[str] = None,
     end_date: Optional[str] = None,
     company_id: Optional[str] = None,
-) -> List[VectorEvent]:
+) -> List[EventVector]:
     metadata = [f"account_id='{account_id}'"]
     if company_id is not None:
         metadata.append(f"company_id='{company_id}'")
@@ -118,3 +137,39 @@ def get_contract_chunks(
 
 def post_contract_chunk(contract_chunk: ContractChunkInput):
     insert_contract_chunks([contract_chunk.model_dump()])
+
+
+def insert_moral_person(person: MoralPersonInput):
+    persons_table.add([person])
+
+
+def get_moral_persons(
+    question: Optional[str] = None,
+    metadata: Optional[str] = None,
+    limit: int = 10,
+) -> List[MoralPersonInput]:
+    if question is None:
+        search_query = persons_table.search()
+    else:
+        search_query = persons_table.search(question)
+    if metadata is not None:
+        search_query = search_query.where(metadata)
+    return search_query.limit(limit).to_pydantic(MoralPersonInput)
+
+
+def insert_physical_person(person: PhysicalPersonInput):
+    physical_persons_table.add([person])
+
+
+def get_physical_persons(
+    question: Optional[str] = None,
+    metadata: Optional[str] = None,
+    limit: int = 10,
+) -> List[PhysicalPersonInput]:
+    if question is None:
+        search_query = physical_persons_table.search()
+    else:
+        search_query = physical_persons_table.search(question)
+    if metadata is not None:
+        search_query = search_query.where(metadata)
+    return search_query.limit(limit).to_pydantic(PhysicalPersonInput)
