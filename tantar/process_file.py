@@ -398,10 +398,6 @@ async def process_file(
         db.add(company_details)
         db.commit()
         db.refresh(company_details)
-        company.company_details = company_details
-        db.add(company)
-        db.commit()
-        db.refresh(company)
     file.company = company
     db.add(file)
     db.commit()
@@ -416,4 +412,3 @@ async def process_file(
         file_metadata=file_metadata,
     )
     return file
-
