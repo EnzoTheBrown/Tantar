@@ -100,7 +100,7 @@ def get_categories():
 
 
 @event_router.get(
-    "/events/{original_id}/authorized_conracts",
+    "/events/{original_id}/authorized_contracts",
     response_model=List[Contract],
 )
 def get_authorized_contracts(
