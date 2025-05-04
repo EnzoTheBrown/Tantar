@@ -1,5 +1,12 @@
 from typing import List
-from schemas.relational import Company, User, CompanyInputModel, CompanyAPIModel
+from schemas.relational import (
+    Company,
+    User,
+    CompanyInputModel,
+    CompanyAPIModel,
+    Shares,
+    Role,
+)
 from tantar.database import get_db, Session
 from fastapi import Depends, HTTPException, APIRouter
 from pydantic import BaseModel
@@ -99,3 +106,33 @@ def update_company(
     db.commit()
     db.refresh(db_company)
     return CompanyAPIModel.model_validate(db_company).model_dump(exclude={"id"})
+
+
+@company_router.get("/company/{company_id}/shares", response_model=List[Shares])
+def get_shares(
+    company_id: str,
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    db_company = db.exec(
+        select(Company).where(Company.original_id == company_id)
+    ).first()
+    if db_company is None:
+        raise HTTPException(status_code=404, detail="Company not found")
+    shares = db.exec(select(Shares).where(Shares.company_id == db_company.id)).all()
+    return [Shares.model_validate(s) for s in shares]
+
+
+@company_router.get("/company/{company_id}/roles", response_model=List[Role])
+def get_roles(
+    company_id: str,
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    db_company = db.exec(
+        select(Company).where(Company.original_id == company_id)
+    ).first()
+    if db_company is None:
+        raise HTTPException(status_code=404, detail="Company not found")
+    roles = db.exec(select(Role).where(Role.company_id == db_company.id)).all()
+    return [Role.model_validate(r) for r in roles]

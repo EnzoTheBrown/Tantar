@@ -17,4 +17,5 @@ from schemas.relational import (
 )
 from sqlmodel import select
 
+
 graph_router = APIRouter()
