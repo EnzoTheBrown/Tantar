@@ -1,7 +1,7 @@
 from datetime import datetime
 import uuid
 from enum import Enum
-from typing import List, Optional
+from typing import List, Optional, Union
 from pydantic import BaseModel, EmailStr, ConfigDict
 from sqlmodel import Field, Relationship, SQLModel
 
@@ -282,11 +282,33 @@ class PhysicalPerson(BaseSQLModel, table=True):
         return f"{self.firstname} {self.lastname}"
 
 
+class PhysicalPersonAPIModel(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    original_id: str
+    firstname: str
+    lastname: str
+
+    @property
+    def name(self) -> str:  # pragma: no cover ‑ simple helper
+        return f"{self.firstname} {self.lastname}"
+
+
 class MoralPerson(BaseSQLModel, table=True):
     name: str
 
     person_id: int = Field(foreign_key="person.id")
     person: Person = Relationship(back_populates="moral_persons")
+
+
+class MoralPersonAPIModel(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    original_id: str
+    firstname: Optional[str] = None
+    lastname: Optional[str] = None
+
+    @property
+    def name(self) -> str:  # pragma: no cover ‑ simple helper
+        return f"{self.firstname} {self.lastname}"
 
 
 # ============================================================================
@@ -407,6 +429,15 @@ class Shares(BaseSQLModel, table=True):
     )
 
 
+class SharesAPIModel(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    original_id: str
+    shares: int
+    percentage: Optional[float] = None
+    person: Union[PhysicalPersonAPIModel, MoralPersonAPIModel]
+    company: CompanyAPIModel
+
+
 class RoleName(str, Enum):
     PRESIDENT = "PRESIDENT"
     DIRECTOR = "DIRECTOR"
@@ -425,6 +456,16 @@ class Role(BaseSQLModel, table=True):
 
     company_id: int = Field(foreign_key="company.id")
     company: Company = Relationship(back_populates="roles")
+
+
+class RoleAPIModel(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    original_id: str
+    name: RoleName
+    start_date: Optional[str] = None
+    end_date: Optional[str] = None
+    person: PhysicalPersonAPIModel
+    company: CompanyAPIModel
 
 
 class AuthorizedContract(BaseSQLModel, table=True):
