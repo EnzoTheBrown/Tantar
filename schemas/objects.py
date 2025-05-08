@@ -11,9 +11,7 @@ class Event(BaseModel):
     title: str = Field(description="Short text explaining the event", title=None)
     page_index: int = Field(description="The index of the page in the file")
     type: EventType = Field(description="The type of the event")
-    label: Optional[JuridicCategory] = Field(
-        description="The juridic category of the event"
-    )
+    label: JuridicCategory = Field(description="The juridic category of the event")
 
 
 class MoralPerson(BaseModel):

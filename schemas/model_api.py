@@ -98,13 +98,13 @@ class CompanyAPIModel(BaseModel):
     )
     name: str = Field(..., description="The name of the company")
     siren: str = Field(..., description="The SIREN number of the company")
-    roles: list[RoleAPIModel] = Field(
+    roles: List[RoleAPIModel] = Field(
         ..., description="List of roles associated with the company"
     )
-    shares: list[SharesAPIModel] = Field(
+    shares: List[SharesAPIModel] = Field(
         ..., description="List of shares associated with the company"
     )
-    files: list[FileAPIModel] = Field(
+    files: List[FileAPIModel] = Field(
         ..., description="List of files associated with the company"
     )
     details: Optional[CompanyDetailsAPIModel] = Field(
