@@ -67,6 +67,7 @@ def get_shares_api_model(shares: Shares) -> SharesAPIModel:
     shares_api_model = SharesAPIModel(
         person=person,
         percentage=shares.percentage,
+        shares=shares.shares,
     )
     return shares_api_model
 
@@ -153,7 +154,7 @@ async def create_company(
     return validated_company
 
 
-@company_router.get("/company/{company_id}")
+@company_router.get("/company/{company_id}", response_model=CompanyAPIModel)
 def get_company(
     company_id: str,
     user: User = Depends(get_current_user),
@@ -192,7 +193,7 @@ class CompanyUpdateModel(BaseModel):
     siren: str
 
 
-@company_router.put("/company/{company_id}")
+@company_router.put("/company/{company_id}", response_model=CompanyAPIModel)
 def update_company(
     company_id: str,
     company: CompanyUpdateModel,

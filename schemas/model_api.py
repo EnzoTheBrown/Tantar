@@ -22,6 +22,7 @@ class SharesAPIModel(BaseModel):
     percentage: float = Field(
         ..., description="The percentage of shares held by the person"
     )
+    shares: int = Field(..., description="The number of shares held by the person")
 
 
 class PVAGAPIModel(BaseModel):
