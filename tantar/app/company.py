@@ -169,7 +169,7 @@ def get_company(
 def get_companies(
     user: User = Depends(get_current_user),
 ):
-    return [CompanyAPIModel.model_validate(c) for c in user.account.companies]
+    return [get_company_api_model(c) for c in user.account.companies]
 
 
 @company_router.delete("/company/{company_id}", status_code=204)
@@ -206,19 +206,4 @@ def update_company(
     db_company.siren = company.siren
     db.commit()
     db.refresh(db_company)
-    return CompanyAPIModel.model_validate(db_company).model_dump(exclude={"id"})
-
-
-@company_router.get("/company/{company_id}/roles", response_model=List[Role])
-def get_roles(
-    company_id: str,
-    user: User = Depends(get_current_user),
-    db: Session = Depends(get_db),
-):
-    db_company = db.exec(
-        select(Company).where(Company.original_id == company_id)
-    ).first()
-    if db_company is None:
-        raise HTTPException(status_code=404, detail="Company not found")
-    roles = db.exec(select(Role).where(Role.company_id == db_company.id)).all()
-    return [Role.model_validate(r) for r in roles]
+    return get_company_api_model(db_company).model_dump(exclude={"id"})
