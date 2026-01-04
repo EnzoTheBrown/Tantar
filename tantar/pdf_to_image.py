@@ -17,5 +17,5 @@ def pdf2images(key, company_id):
         body = json.loads(images["body"])
     except Exception as e:
         logger.error(f"Error decoding lambda response: {images}")
-        raise e
+        return []
     return body

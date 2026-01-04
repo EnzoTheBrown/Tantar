@@ -1,0 +1,200 @@
+Waiting for API at http://api:8000/health
+API is healthy
+POST /user
+POST /login
+GET /user
+GET /users
+POST /account
+GET /account/{account_id}
+POST /company
+GET /company/{company_id}
+GET /companies
+PUT /company/{company_id}
+POST /file
+GET /files
+GET /file/{file_id}
+GET /file/{file_id}/download
+PATCH /company/{company_id}/file/{file_id}
+POST /company/{company_id}/event
+GET /events
+GET /categories
+GET /events/{id}/authorized_contracts (expected 404)
+POST /ws/notify/{company_id}
+DELETE /company/{company_id}
+DELETE /user/{id}
+Client scenario completed successfully.
+Waiting for API at http://api:8000/health
+API is healthy
+POST /user
+POST /login
+GET /user
+GET /users
+POST /account
+GET /account/{account_id}
+POST /company
+GET /company/{company_id}
+GET /companies
+PUT /company/{company_id}
+POST /file
+GET /files
+GET /file/{file_id}
+GET /file/{file_id}/download
+PATCH /company/{company_id}/file/{file_id}
+POST /company/{company_id}/event
+GET /events
+GET /categories
+GET /events/{id}/authorized_contracts (expected 404)
+POST /ws/notify/{company_id}
+DELETE /company/{company_id}
+DELETE /user/{id}
+Client scenario completed successfully.
+Waiting for API at http://api:8000/health
+API is healthy
+POST /user
+POST /login
+GET /user
+GET /users
+POST /account
+GET /account/{account_id}
+POST /company
+GET /company/{company_id}
+GET /companies
+PUT /company/{company_id}
+POST /file
+GET /files
+GET /file/{file_id}
+GET /file/{file_id}/download
+PATCH /company/{company_id}/file/{file_id}
+POST /company/{company_id}/event
+GET /events
+GET /categories
+GET /events/{id}/authorized_contracts (expected 404)
+POST /ws/notify/{company_id}
+DELETE /company/{company_id}
+DELETE /user/{id}
+Client scenario completed successfully.
+Waiting for API at http://api:8000/health
+API is healthy
+POST /user
+POST /login
+GET /user
+GET /users
+POST /account
+GET /account/{account_id}
+POST /company
+GET /company/{company_id}
+GET /companies
+PUT /company/{company_id}
+POST /file
+GET /files
+GET /file/{file_id}
+GET /file/{file_id}/download
+PATCH /company/{company_id}/file/{file_id}
+POST /company/{company_id}/event
+GET /events
+GET /categories
+GET /events/{id}/authorized_contracts (expected 404)
+POST /ws/notify/{company_id}
+DELETE /company/{company_id}
+DELETE /user/{id}
+Client scenario completed successfully.
+Waiting for API at http://api:8000/health
+API is healthy
+POST /user
+POST /login
+GET /user
+GET /users
+POST /account
+GET /account/{account_id}
+POST /company
+GET /company/{company_id}
+GET /companies
+PUT /company/{company_id}
+POST /file
+GET /files
+GET /file/{file_id}
+GET /file/{file_id}/download
+PATCH /company/{company_id}/file/{file_id}
+POST /company/{company_id}/event
+GET /events
+GET /categories
+GET /events/{id}/authorized_contracts (expected 404)
+POST /ws/notify/{company_id}
+DELETE /company/{company_id}
+DELETE /user/{id}
+Client scenario completed successfully.
+Waiting for API at http://api:8000/health
+API is healthy
+POST /user
+POST /login
+GET /user
+GET /users
+POST /account
+GET /account/{account_id}
+POST /company
+GET /company/{company_id}
+GET /companies
+PUT /company/{company_id}
+POST /file
+GET /files
+GET /file/{file_id}
+GET /file/{file_id}/download
+PATCH /company/{company_id}/file/{file_id}
+POST /company/{company_id}/event
+GET /events
+GET /categories
+GET /events/{id}/authorized_contracts (expected 404)
+POST /ws/notify/{company_id}
+DELETE /company/{company_id}
+DELETE /user/{id}
+Client scenario completed successfully.
+Waiting for API at http://api:8000/health
+API is healthy
+POST /user
+POST /login
+GET /user
+GET /users
+POST /account
+GET /account/{account_id}
+POST /company
+GET /company/{company_id}
+GET /companies
+PUT /company/{company_id}
+POST /file
+GET /files
+GET /file/{file_id}
+GET /file/{file_id}/download
+PATCH /company/{company_id}/file/{file_id}
+POST /company/{company_id}/event
+GET /events
+GET /categories
+GET /events/{id}/authorized_contracts (expected 404)
+POST /ws/notify/{company_id}
+DELETE /company/{company_id}
+DELETE /user/{id}
+Client scenario completed successfully.
+Waiting for API at http://api:8000/health
+API is healthy
+POST /user
+POST /login
+GET /user
+GET /users
+POST /account
+GET /account/{account_id}
+POST /company
+GET /company/{company_id}
+GET /companies
+PUT /company/{company_id}
+POST /file
+GET /files
+GET /file/{file_id}
+GET /file/{file_id}/download
+PATCH /company/{company_id}/file/{file_id}
+POST /company/{company_id}/event
+GET /events
+GET /categories
+GET /events/{id}/authorized_contracts (expected 404)
+POST /ws/notify/{company_id}
+DELETE /company/{company_id}
+DELETE /user/{id}
+Client scenario completed successfully.

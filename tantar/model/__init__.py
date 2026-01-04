@@ -1,11 +1,9 @@
-from typing import Any
-from tantar.settings import SETTINGS
+from typing import Any, List, Optional
 from tantar.utils.logger import get_logger
 from .parser import extract_events
 from .tokenizer import tokenize_paragraphs
 from .classifier import classify_file, FileType, classify_contract
 from .ocr import get_blocks, get_page_plane_text
-from typing import List, Optional, Any
 from schemas.relational import Contract
 from schemas.objects import FileMetadata
 from schemas.vector import FileChunk

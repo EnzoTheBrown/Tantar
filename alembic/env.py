@@ -4,7 +4,7 @@ from sqlalchemy import engine_from_config
 from sqlalchemy import pool
 
 from alembic import context
-from schemas.model import BaseSQLModel
+from schemas.relational import BaseSQLModel
 
 target_metadata = BaseSQLModel.metadata
 

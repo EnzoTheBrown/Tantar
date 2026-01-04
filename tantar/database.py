@@ -1,19 +1,9 @@
 from sqlalchemy import create_engine
 from sqlmodel import Session, SQLModel
 from schemas.relational import (
-    Account,
     User,
     Company,
     File,
-    CompanyDetails,
-    Event,
-    Person,
-    PhysicalPerson,
-    MoralPerson,
-    Contract,
-    PVAG,
-    Shares,
-    Role,
 )
 
 engine = create_engine("sqlite:///db/tantar.db")
@@ -28,17 +18,7 @@ def get_db():
 __all__ = [
     "get_db",
     "engine",
-    "Account",
     "User",
     "Company",
     "File",
-    "CompanyDetails",
-    "Event",
-    "Person",
-    "PhysicalPerson",
-    "MoralPerson",
-    "Contract",
-    "PVAG",
-    "Shares",
-    "Role",
 ]

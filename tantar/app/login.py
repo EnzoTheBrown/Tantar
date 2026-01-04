@@ -1,6 +1,6 @@
 from fastapi import HTTPException, status, Depends, Response, APIRouter
 from tantar.database import get_db
-from schemas.relational import User, UserAPIModel
+from schemas.relational import User
 from fastapi.security import OAuth2PasswordRequestForm
 from datetime import timedelta
 from .utils import ACCESS_TOKEN_EXPIRE_MINUTES, create_access_token
@@ -47,10 +47,8 @@ async def login(
     access_token = create_access_token(
         data={
             "sub": user_uuid,
-            "companies": [
-                str(company.original_id) for company in user.account.companies
-            ],
-            "account_id": str(user.account.original_id),
+            "companies": [str(company.original_id) for company in user.companies],
+            "account_id": str(user.original_id),
         },
         expires_delta=access_token_expires,
     )

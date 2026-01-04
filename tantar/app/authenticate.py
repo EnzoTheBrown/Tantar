@@ -4,7 +4,7 @@ from passlib.context import CryptContext
 from tantar.utils.logger import get_logger
 from tantar.settings import SETTINGS
 from fastapi import HTTPException, status, Depends
-from schemas.relational import User, Account
+from schemas.relational import User
 from tantar.database import get_db, Session
 from sqlmodel import select
 from .utils import ALGORITHM
@@ -83,16 +83,11 @@ async def get_current_user(
 
 async def authenticate_service(
     token: str = Depends(oauth2_scheme), db=Depends(get_db)
-) -> User | Account:
+) -> User:
     """
     use the token to return the current user or account
     """
     logger.info("Getting current user based on bearer token.")
     payload = decode_token(token)
     original_id = payload.get("sub")
-    if payload.get("origin") == "service":
-        return db.exec(
-            select(Account).where(Account.original_id == original_id)
-        ).first()
-    else:
-        return db.exec(select(User).where(User.original_id == original_id)).first()
+    return db.exec(select(User).where(User.original_id == original_id)).first()

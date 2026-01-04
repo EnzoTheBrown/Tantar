@@ -1,5 +1,5 @@
 from pydantic import BaseModel, Field, BeforeValidator
-from typing import Optional, List, Union, Annotated
+from typing import Optional, Union, Annotated
 
 from schemas.file_model import EventType, JuridicCategory, FileType
 

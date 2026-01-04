@@ -1,7 +1,7 @@
 import requests
 from pydantic import BaseModel, Field
 from tantar.settings import SETTINGS
-from schemas.relational import CompanyDetails, Company
+from schemas.relational import Company
 from typing import Optional
 from tantar.utils.logger import get_logger
 
@@ -26,29 +26,26 @@ def get_pappers_company(siren: str) -> PappersCompany:
     return PappersCompany(**response.json())
 
 
-def create_company_details_(company: Company) -> CompanyDetails:
+def create_company_details_(company: Company) -> Company:
     pappers_company = get_pappers_company(company.siren)
     logger.info(
         f"We got new elements from pappers to complete company details: {pappers_company.siren} {pappers_company.name}"
     )
-    return CompanyDetails(
-        siren=pappers_company.siren,
-        name=pappers_company.name,
-        naf_code=pappers_company.naf_code,
-        activity=pappers_company.activity,
-        capital=pappers_company.capital,
-        company=company,
-        juridic_form=pappers_company.juridic_form,
-    )
+    company.details_naf_code = pappers_company.naf_code
+    company.details_activity = pappers_company.activity
+    company.details_capital = pappers_company.capital
+    company.details_juridic_form = pappers_company.juridic_form
+    return company
 
 
-def create_company_details(company: Company) -> CompanyDetails:
-    return CompanyDetails(
-        siren=company.siren,
-        name=company.name,
-        naf_code="",
-        activity="",
-        capital=1000,
-        company=company,
-        juridic_form="SAS, Société par actions simplifiée",
+def create_company_details(company: Company, db=None) -> Company:
+    company.details_naf_code = company.details_naf_code or ""
+    company.details_activity = company.details_activity or ""
+    if company.details_capital is None:
+        company.details_capital = 1000
+    company.details_juridic_form = (
+        company.details_juridic_form or "SAS, Société par actions simplifiée"
     )
+    if db is not None:
+        db.add(company)
+    return company

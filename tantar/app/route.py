@@ -1,7 +1,13 @@
+import logfire
+import os
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi import FastAPI
-import logfire
 
+
+logfire_token = os.getenv("LOGFIRE_TOKEN")
+if not logfire_token:
+    raise RuntimeError("LOGFIRE_TOKEN is required to start the API")
+logfire.configure(token=logfire_token)
 
 app = FastAPI()
 app.add_middleware(

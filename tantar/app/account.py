@@ -1,6 +1,5 @@
 from typing import Annotated
 from schemas.relational import (
-    Account,
     AccountInputModel,
     AccountAPIModel,
     User,
@@ -19,10 +18,11 @@ def create_account(
     user: Annotated[User, Security(get_current_user)],
     db: Session = Depends(get_db),
 ):
-    account = Account(name=account.name)
-    db.add(account)
+    user.account_name = account.name
+    db.add(user)
     db.commit()
-    return AccountAPIModel.model_validate(account)
+    db.refresh(user)
+    return AccountAPIModel(original_id=user.original_id, name=user.account_name or "")
 
 
 @account_router.get("/account/{account_id}", response_model=AccountAPIModel)
@@ -31,9 +31,9 @@ def get_account(
     user: Annotated[User, Security(get_current_user)],
     db: Session = Depends(get_db),
 ):
-    account_id = db.exec(
-        select(Account).where(Account.original_id == account_id)
-    ).first()
-    if account_id is None:
+    db_user = db.exec(select(User).where(User.original_id == account_id)).first()
+    if db_user is None:
         raise HTTPException(status_code=404, detail="Account not found")
-    return AccountAPIModel.model_validate(account_id)
+    return AccountAPIModel(
+        original_id=db_user.original_id, name=db_user.account_name or ""
+    )

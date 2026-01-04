@@ -6,7 +6,7 @@ import pytest
 from pdf2image import convert_from_path
 from tantar.model.ocr import get_blocks, get_page_plane_text
 import io
-from schemas.file_model import FileType, JuridicCategory, EventType, ContractType
+from schemas.file_model import FileType, JuridicCategory, EventType
 
 
 def pdf_to_pages(filepath):

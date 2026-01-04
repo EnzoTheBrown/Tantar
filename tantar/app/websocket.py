@@ -7,7 +7,7 @@ from sqlmodel import select
 
 from tantar.utils.logger import get_logger
 from tantar.settings import SETTINGS
-from schemas.relational import User, Account
+from schemas.relational import User
 from tantar.database import get_db, Session
 from schemas.websocket import WebSocketMessage
 from .authenticate import ALGORITHM
@@ -84,13 +84,11 @@ async def notify(company_id: str, message: WebSocketMessage, db: Session):
     logger.info(f"Notifying clients for company {company_id} with message: {message}")
 
     for account_id, websockets in list(websocket_connections.items()):
-        user = db.exec(
-            select(User).join(Account).where(Account.original_id == account_id)
-        ).first()
+        user = db.exec(select(User).where(User.original_id == account_id)).first()
         if not user:
             continue
 
-        company_ids = [str(company.original_id) for company in user.account.companies]
+        company_ids = [str(company.original_id) for company in user.companies]
         if company_id in company_ids:
             logger.info(
                 f"Sending data to client for company {company_id} (account {account_id})"

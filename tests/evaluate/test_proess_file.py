@@ -1,5 +1,5 @@
 import pytest
-from schemas.model import File
+from schemas.relational import File
 from process_file import process_file, update_links
 from tantar.utils import state
 

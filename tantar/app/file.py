@@ -17,11 +17,12 @@ from tantar.settings import SETTINGS
 import uuid
 from tantar.utils.logger import get_logger
 from .authenticate import get_current_user
-from .websocket import notify, notify_account, notify_account
+from .websocket import notify, notify_account
 from typing import Optional, Annotated
 from schemas.websocket import WebSocketParsingError, WebSocketNewFileMessage
 from datetime import datetime
-from tantar.process_file import process_file
+import asyncio
+from tantar.process_file import run_process_file
 
 logger = get_logger(__name__)
 file_router = APIRouter()
@@ -49,7 +50,9 @@ async def create_file(
     )
     if company_id:
         db_company = db.exec(
-            select(Company).where(Company.original_id == company_id)
+            select(Company).where(
+                Company.original_id == company_id, Company.user_id == user.id
+            )
         ).first()
         if db_company is None:
             raise HTTPException(status_code=404, detail="Company not found")
@@ -59,20 +62,20 @@ async def create_file(
         name=file.filename,
         s3_path=s3_key,
         company=db_company,
-        account=user.account,
+        user=user,
     )
     db.add(new_file)
     db.commit()
     db.refresh(new_file)
     file_model = FileAPIModel.model_validate(new_file)
     await notify_account(
-        account_id=user.account.original_id,
+        account_id=user.original_id,
         message=WebSocketNewFileMessage(file=file_model),
     )
-    background_tasks.add_task(
-        process_file,
-        db=db,
-        file=new_file,
+    asyncio.create_task(run_process_file(file_original_id=new_file.original_id))
+    logger.info(
+        "Scheduled process_file task",
+        extra={"file_original_id": new_file.original_id},
     )
 
     return file_model
@@ -88,7 +91,7 @@ def get_files(
     ),
 ):
     allowed_order_fields = {"created_at", "watched_at"}
-    clause = File.account_id == user.account.id
+    clause = File.user_id == user.id
     if company_id:
         clause = (clause) & (Company.original_id == company_id)
     if ordered_by:
@@ -98,7 +101,7 @@ def get_files(
                 detail=f"Invalid ordered_by parameter. Must be one of: {', '.join(allowed_order_fields)}",
             )
         if ordered_by == "watched_at":
-            clause = (clause) & (File.watched_at != None)
+            clause = (clause) & (File.watched_at.is_not(None))
     else:
         ordered_by = "created_at"
     if company_id:

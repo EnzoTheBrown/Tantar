@@ -1,0 +1,22 @@
+aws_region     = "eu-west-1"
+instance_type  = "t3.medium"
+ssh_key_name   = "kp"
+admin_cidr     = "0.0.0.0/0"
+
+app_repo_url = "https://github.com/your-org/tantar.git"
+app_repo_ref = "main"
+
+acme_email = "enzo@tantar.ai"
+front_host = "tantar.ai"
+api_host   = "api.tantar.ai"
+
+ecr_api_repo_name   = "tantar-api"
+ecr_front_repo_name = "tantar-front"
+ecr_image_tag       = "latest"
+
+# Optional extra environment variables appended to .env on the instance.
+# Example:
+# app_env_extra = <<EOF
+# AWS_ACCESS_KEY=...
+# AWS_SECRET_KEY=...
+# EOF

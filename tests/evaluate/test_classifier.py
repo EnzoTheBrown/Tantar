@@ -1,11 +1,9 @@
 from tantar.model.classifier import (
     classify_file,
-    classify_contract,
-    classify_juridic_event,
 )
 import pytest
 from pdf2image import convert_from_path
-from schemas.file_model import FileType, JuridicCategory, EventType, ContractType
+from schemas.file_model import FileType
 from tantar.model.ocr import get_blocks, get_page_plane_text
 import io
 

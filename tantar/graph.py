@@ -1,86 +1,26 @@
-from schemas.model import (
-    GraphNode,
-    GraphEdge,
-    File,
-    EventInput,
-    Company,
-    MoralPerson,
-    PhysicalPerson,
-    NodeType,
-    Share,
-    RelationShipModel,
-    Role,
-    Shares,
-)
-from typing import Union, Optional, List
-from sqlmodel import select
+from tantar.utils.logger import get_logger
 
-Node = Union[
-    Company,
-    File,
-    EventInput,
-    MoralPerson,
-    PhysicalPerson,
-    Share,
-    RelationShipModel,
-    Role,
-    Shares,
-]
+logger = get_logger(__name__)
 
 
-def create_node(db, entity: Node, type: NodeType) -> GraphNode:
-    node = GraphNode(
-        type=type,
-        original_id=entity.original_id,
-        name=entity.name,
-    )
-
-    db.add(node)
-    db.commit()
-
-    return node
+def create_node(db, entity, type):
+    logger.info("Skipping graph node creation (minimal relational DB).")
+    return None
 
 
-def get_node(db, original_id: str) -> Optional[GraphNode]:
-    node = db.exec(
-        select(GraphNode).where(GraphNode.original_id == original_id)
-    ).first()
-    if node is None:
-        raise ValueError("Node not found")
-    return node
+def get_node(db, original_id: str):
+    logger.info("Skipping graph node lookup (minimal relational DB).")
+    return None
 
 
-def create_edge(db, source: Node, target: Node, label: str) -> GraphEdge:
-    source_node = get_node(db, source.original_id)
-    target_node = get_node(db, target.original_id)
-    if source_node is None:
-        raise ValueError("Source node not found")
-    if target_node is None:
-        raise ValueError("Target node not found")
-    edge = GraphEdge(source=source_node, target=target_node, label=label)
-    db.add(edge)
-    db.commit()
-    db.refresh(edge)
-    return edge
+def create_edge(db, source, target, label: str):
+    logger.info("Skipping graph edge creation (minimal relational DB).")
+    return None
 
 
-def get_nodes(db) -> list[GraphNode]:
-    nodes = db.exec(select(GraphNode)).all()
-    return nodes
+def get_nodes(db):
+    return []
 
 
-def get_neighbors(
-    db, source_id: Optional[str], label: Optional[str] = None
-) -> Optional[List[GraphNode]]:
-    node = db.exec(select(GraphNode).where(GraphNode.original_id == source_id)).first()
-    if node is None:
-        raise ValueError("Node not found")
-    clauses = (GraphEdge.source_id == node.id) if source_id else True
-    if label:
-        clauses &= GraphEdge.label == label
-    nodes = db.exec(
-        select(GraphNode)
-        .join(GraphEdge, GraphEdge.target_id == GraphNode.id)
-        .where(clauses)
-    ).all()
-    return nodes
+def get_neighbors(db, source_id: str, label: str | None = None):
+    return []

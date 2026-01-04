@@ -1,11 +1,11 @@
 from datetime import datetime
 import uuid
 from enum import Enum
-from typing import List, Optional, Union
+from typing import List, Optional
+
 from pydantic import BaseModel, EmailStr, ConfigDict
 from sqlmodel import Field, Relationship, SQLModel
 
-# ----- External/shared enums -------------------------------------------------
 from schemas.file_model import (
     ContractType,
     EventType,
@@ -27,17 +27,53 @@ class BaseSQLModel(SQLModel):
 
 
 # ============================================================================
-# Account & User
+# User, Company, File (minimal relational state)
 # ============================================================================
 
 
-class Account(BaseSQLModel, table=True):
-    name: str
+class User(BaseSQLModel, table=True):
+    email: str
+    hashed_password: str
+    account_name: Optional[str] = None
 
-    users: List["User"] = Relationship(back_populates="account")
-    companies: List["Company"] = Relationship(back_populates="account")
-    files: List["File"] = Relationship(back_populates="account")
-    persons: List["Person"] = Relationship(back_populates="account")
+    companies: List["Company"] = Relationship(back_populates="user")
+    files: List["File"] = Relationship(back_populates="user")
+
+
+class Company(BaseSQLModel, table=True):
+    name: str
+    siren: str
+
+    user_id: int = Field(foreign_key="user.id")
+    user: User = Relationship(back_populates="companies")
+
+    details_naf_code: Optional[str] = None
+    details_activity: Optional[str] = None
+    details_capital: Optional[float] = None
+    details_juridic_form: Optional[str] = None
+
+    files: List["File"] = Relationship(back_populates="company")
+
+
+class File(BaseSQLModel, table=True):
+    name: str
+    s3_path: str
+    status: int = Field(default=0)
+
+    user_id: int = Field(foreign_key="user.id")
+    user: User = Relationship(back_populates="files")
+
+    company_id: Optional[int] = Field(default=None, foreign_key="company.id")
+    company: Optional[Company] = Relationship(back_populates="files")
+
+    created_at: datetime = Field(default_factory=datetime.now)
+    watched_at: Optional[datetime] = None
+    type: Optional[FileType] = None
+
+
+# ============================================================================
+# API schemas (kept for compatibility)
+# ============================================================================
 
 
 class AccountInputModel(BaseModel):
@@ -49,14 +85,6 @@ class AccountAPIModel(BaseModel):
     model_config = ConfigDict(from_attributes=True)
     original_id: str
     name: str
-
-
-class User(BaseSQLModel, table=True):
-    email: str
-    hashed_password: str
-
-    account_id: int = Field(foreign_key="account.id")
-    account: Account = Relationship(back_populates="users")
 
 
 class UserInputModel(BaseModel):
@@ -73,40 +101,10 @@ class UserAPIModel(BaseModel):
     account: AccountAPIModel
 
 
-# ============================================================================
-# Company & details
-# ============================================================================
-
-
-class Company(BaseSQLModel, table=True):
-    name: str
-    siren: str
-
-    account_id: int = Field(foreign_key="account.id")
-    account: Account = Relationship(back_populates="companies")
-
-    files: List["File"] = Relationship(back_populates="company")  # noqa: F821
-    details: Optional["CompanyDetails"] = Relationship(back_populates="company")  # noqa: F821
-    shares: List["Shares"] = Relationship(back_populates="company")  # noqa: F821
-    roles: List["Role"] = Relationship(back_populates="company")  # noqa: F821
-
-
 class CompanyInputModel(BaseModel):
     model_config = ConfigDict(from_attributes=True)
     name: str
     siren: str
-
-
-class CompanyDetails(BaseSQLModel, table=True):
-    siren: str
-    name: str
-    naf_code: str
-    activity: str
-    capital: Optional[float] = None
-    juridic_form: Optional[str] = None
-
-    company_id: int = Field(foreign_key="company.id")
-    company: Company = Relationship(back_populates="details")
 
 
 class CompanyDetailsAPIModel(BaseModel):
@@ -126,45 +124,6 @@ class CompanyAPIModel(BaseModel):
     siren: str
     account: Optional[AccountAPIModel] = None
     details: Optional[CompanyDetailsAPIModel] = None
-
-
-# ============================================================================
-# Files, PVAG & Events
-# ============================================================================
-
-
-class File(BaseSQLModel, table=True):
-    name: str
-    s3_path: str
-    status: int = Field(default=0)
-
-    account_id: Optional[int] = Field(default=None, foreign_key="account.id")
-    account: Optional[Account] = Relationship(back_populates="files")
-
-    company_id: Optional[int] = Field(default=None, foreign_key="company.id")
-    company: Optional[Company] = Relationship(back_populates="files")
-
-    created_at: datetime = Field(default_factory=datetime.now)
-    watched_at: Optional[datetime] = None
-    type: Optional[FileType] = None
-
-    contracts: List["Contract"] = Relationship(  # noqa: F821
-        back_populates="file", sa_relationship_kwargs={"cascade": "all, delete"}
-    )
-
-    pvags: List["PVAG"] = Relationship(  # noqa: F821
-        back_populates="file", sa_relationship_kwargs={"cascade": "all, delete"}
-    )
-
-    statuts: List["Statuts"] = Relationship(
-        back_populates="file", sa_relationship_kwargs={"cascade": "all, delete"}
-    )
-    ordres_de_mouvement: List["OrdreDeMouvement"] = Relationship(
-        back_populates="file", sa_relationship_kwargs={"cascade": "all, delete"}
-    )
-    registre_de_mouvement_de_titres: List["RegistreDeMouvementDeTitres"] = Relationship(
-        back_populates="file", sa_relationship_kwargs={"cascade": "all, delete"}
-    )
 
 
 class FileInputModel(BaseModel):
@@ -194,143 +153,22 @@ class SerFileAPIModel(BaseModel):
     type: Optional[FileType] = None
 
 
-class PVAG(BaseSQLModel, table=True):
-    file_id: int = Field(foreign_key="file.id")
-    file: File = Relationship(back_populates="pvags")
-
-    events: List["Event"] = Relationship(  # noqa: F821
-        back_populates="pvag", sa_relationship_kwargs={"cascade": "all, delete"}
-    )
-
-
 class PVAGAPIModel(BaseModel):
     model_config = ConfigDict(from_attributes=True)
     original_id: str
     file: FileAPIModel
 
 
-class Statuts(BaseSQLModel, table=True):
-    file_id: int = Field(foreign_key="file.id")
-    file: File = Relationship(back_populates="statuts")
-
-
-class StatutsAPIModel(BaseModel):
+class Event(BaseModel):
     model_config = ConfigDict(from_attributes=True)
-    original_id: str
-    file: FileAPIModel
-
-
-class OrdreDeMouvement(BaseSQLModel, table=True):
-    file_id: int = Field(foreign_key="file.id")
-    file: File = Relationship(back_populates="ordres_de_mouvement")
-
-
-class OrdreDeMouvementAPIModel(BaseModel):
-    model_config = ConfigDict(from_attributes=True)
-    original_id: str
-    file: FileAPIModel
-
-
-class RegistreDeMouvementDeTitres(BaseSQLModel, table=True):
-    file_id: int = Field(foreign_key="file.id")
-    file: File = Relationship(back_populates="registre_de_mouvement_de_titres")
-
-
-class RegistreDeMouvementDeTitresAPIModel(BaseModel):
-    model_config = ConfigDict(from_attributes=True)
-    original_id: str
-    file: FileAPIModel
-
-
-# ============================================================================
-# Person hierarchy
-# ============================================================================
-
-
-class Person(BaseSQLModel, table=True):
-    account_id: int = Field(foreign_key="account.id")
-    account: "Account" = Relationship(back_populates="persons")
-    physical_persons: List["PhysicalPerson"] = Relationship(
-        back_populates="person", sa_relationship_kwargs={"cascade": "all, delete"}
-    )
-    moral_persons: List["MoralPerson"] = Relationship(
-        back_populates="person", sa_relationship_kwargs={"cascade": "all, delete"}
-    )
-    shares: List["Shares"] = Relationship(
-        back_populates="person", sa_relationship_kwargs={"cascade": "all, delete"}
-    )
-    roles: List["Role"] = Relationship(
-        back_populates="person", sa_relationship_kwargs={"cascade": "all, delete"}
-    )
-    offerees: List["Offeree"] = Relationship(
-        back_populates="person", sa_relationship_kwargs={"cascade": "all, delete"}
-    )
-    offerors: List["Offeror"] = Relationship(
-        back_populates="person", sa_relationship_kwargs={"cascade": "all, delete"}
-    )
-
-
-class PhysicalPerson(BaseSQLModel, table=True):
-    firstname: str
-    lastname: str
-
-    person_id: int = Field(foreign_key="person.id")
-    person: Person = Relationship(back_populates="physical_persons")
-
-    @property
-    def name(self) -> str:  # pragma: no cover ‑ simple helper
-        return f"{self.firstname} {self.lastname}"
-
-
-class PhysicalPersonAPIModel(BaseModel):
-    model_config = ConfigDict(from_attributes=True)
-    original_id: str
-    firstname: str
-    lastname: str
-
-    @property
-    def name(self) -> str:  # pragma: no cover ‑ simple helper
-        return f"{self.firstname} {self.lastname}"
-
-
-class MoralPerson(BaseSQLModel, table=True):
-    name: str
-
-    person_id: int = Field(foreign_key="person.id")
-    person: Person = Relationship(back_populates="moral_persons")
-
-
-class MoralPersonAPIModel(BaseModel):
-    model_config = ConfigDict(from_attributes=True)
-    original_id: str
-    firstname: Optional[str] = None
-    lastname: Optional[str] = None
-
-    @property
-    def name(self) -> str:  # pragma: no cover ‑ simple helper
-        return f"{self.firstname} {self.lastname}"
-
-
-# ============================================================================
-# Events & related schemas
-# ============================================================================
-
-
-class Event(BaseSQLModel, table=True):
+    original_id: Optional[str] = None
     text: str
     title: str
     page_index: int
     type: EventType
     label: JuridicCategory
-
-    pvag_id: int = Field(foreign_key="pvag.id")
-    pvag: PVAG = Relationship(back_populates="events")
-
+    pvag: Optional[PVAGAPIModel] = None
     date: Optional[datetime] = None
-
-    authorized_contracts: List["AuthorizedContract"] = Relationship(  # noqa: F821
-        back_populates="event", sa_relationship_kwargs={"cascade": "all, delete"}
-    )
 
     @property
     def name(self) -> str:  # pragma: no cover
@@ -377,67 +215,6 @@ class EventCategoriesAPIModel(BaseModel):
     categories: List[str]
 
 
-# ============================================================================
-# Contracts, shares & roles
-# ============================================================================
-
-
-class Contract(BaseSQLModel, table=True):
-    type: Optional[ContractType]
-    title: str
-
-    file_id: int = Field(foreign_key="file.id")
-    file: File = Relationship(back_populates="contracts")
-
-    offerees: List["Offeree"] = Relationship(  # noqa: F821
-        back_populates="contract", sa_relationship_kwargs={"cascade": "all, delete"}
-    )
-    offerors: List["Offeror"] = Relationship(  # noqa: F821
-        back_populates="contract", sa_relationship_kwargs={"cascade": "all, delete"}
-    )
-    authorized_contracts: List["AuthorizedContract"] = Relationship(  # noqa: F821
-        back_populates="contract", sa_relationship_kwargs={"cascade": "all, delete"}
-    )
-
-
-class Offeror(BaseSQLModel, table=True):
-    person_id: int = Field(foreign_key="person.id")
-    person: Person = Relationship(back_populates="offerors")
-
-    contract_id: int = Field(foreign_key="contract.id")
-    contract: Contract = Relationship(back_populates="offerors")
-
-
-class Offeree(BaseSQLModel, table=True):
-    person_id: int = Field(foreign_key="person.id")
-    person: Person = Relationship(back_populates="offerees")
-
-    contract_id: int = Field(foreign_key="contract.id")
-    contract: Contract = Relationship(back_populates="offerees")
-
-
-class Shares(BaseSQLModel, table=True):
-    person_id: int = Field(foreign_key="person.id")
-    person: "Person" = Relationship(back_populates="shares")
-
-    company_id: int = Field(foreign_key="company.id")
-    company: "Company" = Relationship(back_populates="shares")
-
-    shares: int = Field(description="Number of shares owned by the person")
-    percentage: Optional[float] = Field(
-        default=None, description="Percentage of company capital owned"
-    )
-
-
-class SharesAPIModel(BaseModel):
-    model_config = ConfigDict(from_attributes=True)
-    original_id: str
-    shares: int
-    percentage: Optional[float] = None
-    person: Union[PhysicalPersonAPIModel, MoralPersonAPIModel]
-    company: CompanyAPIModel
-
-
 class RoleName(str, Enum):
     PRESIDENT = "PRESIDENT"
     DIRECTOR = "DIRECTOR"
@@ -446,60 +223,21 @@ class RoleName(str, Enum):
     UNKNOWN = "UNKNOWN"
 
 
-class Role(BaseSQLModel, table=True):
-    name: RoleName = Field(description="Role name inside the company")
-    start_date: Optional[str] = None
-    end_date: Optional[str] = None
-
-    person_id: int = Field(foreign_key="person.id")
-    person: Person = Relationship(back_populates="roles")
-
-    company_id: int = Field(foreign_key="company.id")
-    company: Company = Relationship(back_populates="roles")
-
-
-class RoleAPIModel(BaseModel):
+class Contract(BaseModel):
     model_config = ConfigDict(from_attributes=True)
-    original_id: str
-    name: RoleName
-    start_date: Optional[str] = None
-    end_date: Optional[str] = None
-    person: PhysicalPersonAPIModel
-    company: CompanyAPIModel
+    original_id: Optional[str] = None
+    type: Optional[ContractType] = None
+    title: Optional[str] = None
+    file_id: Optional[str] = None
 
-
-class AuthorizedContract(BaseSQLModel, table=True):
-    contract_id: int = Field(foreign_key="contract.id")
-    contract: Contract = Relationship(back_populates="authorized_contracts")
-
-    event_id: int = Field(foreign_key="event.id")
-    event: Event = Relationship(back_populates="authorized_contracts")
-
-
-# ============================================================================
-# Re‑export public symbols
-# ============================================================================
 
 __all__ = [
     # tables
-    "Account",
+    "BaseSQLModel",
     "User",
     "Company",
     "File",
-    "Person",
-    "PhysicalPerson",
-    "MoralPerson",
-    "Event",
-    "Contract",
-    "Shares",
-    "Role",
-    "PVAG",
-    "CompanyDetails",
-    "Statuts",
-    "OrdreDeMouvement",
-    "RegistreDeMouvementDeTitres",
-    "AuthorizedContract",
-    # pydantic schemas
+    # api schemas
     "AccountInputModel",
     "AccountAPIModel",
     "UserInputModel",
@@ -511,7 +249,10 @@ __all__ = [
     "FileAPIModel",
     "SerFileAPIModel",
     "PVAGAPIModel",
+    "Event",
     "EventAPIModel",
     "EventInput",
     "EventCategoriesAPIModel",
+    "RoleName",
+    "Contract",
 ]

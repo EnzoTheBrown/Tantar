@@ -51,6 +51,9 @@ tests = [
     "pypdf2>=3.0.1",
     "pytest-asyncio>=0.25.3",
 ]
+deve = [
+    "ipython>=9.0.2",
+]
 
 [project.scripts]
 scheduler = "services.scheduler:main"
@@ -61,4 +64,3 @@ pydantic_plugin_record = "all"
 
 [tool.pytest.ini_options]
 pythonpath = ["."]
-

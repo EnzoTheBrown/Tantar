@@ -1,10 +1,6 @@
 from pydantic import BaseModel, Field, BeforeValidator
 from typing import List, Optional, Union, Annotated
 from .file_model import JuridicCategory, EventType, FileType
-from .model import (
-    Company as CompanyModel,
-    File as FileModel,
-)
 from enum import Enum
 from sqlmodel import SQLModel, select, Field as sql_field
 from datetime import datetime

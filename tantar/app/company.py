@@ -1,27 +1,19 @@
-from typing import Union, List
+from typing import List
 from schemas.relational import (
     Company,
     User,
     CompanyInputModel,
-    Shares,
-    Role,
-    MoralPerson,
-    PhysicalPerson,
-    Person,
     File,
 )
 from schemas.model_api import (
     CompanyAPIModel,
-    CompanyDetailsAPIModel,
-    RoleAPIModel,
-    PersonAPIModel,
-    SharesAPIModel,
     PVAGAPIModel,
     StatusAPIModel,
     ContratAPIModel,
     OrdreDeMouvementAPIModel,
     FileAPIModel,
     RegistreDeMouvementAPIModel,
+    CompanyDetailsAPIModel,
 )
 from schemas.file_model import FileType
 from tantar.database import get_db, Session
@@ -39,41 +31,13 @@ logger = get_logger(__name__)
 company_router = APIRouter()
 
 
-def get_person_api_model(person: Person) -> PersonAPIModel:
-    moral_persons = person.moral_persons
-    physical_persons = person.physical_persons
-    is_moral = bool(moral_persons)
-    if is_moral:
-        person = moral_persons[0]
-    else:
-        person = physical_persons[0]
-    return PersonAPIModel(
-        name=person.name,
-        is_moral=is_moral,
-    )
-
-
-def get_role_api_model(role: Role) -> RoleAPIModel:
-    person = get_person_api_model(role.person)
-    role_api_model = RoleAPIModel(
-        name=role.name,
-        person=person,
-    )
-    return role_api_model
-
-
-def get_shares_api_model(shares: Shares) -> SharesAPIModel:
-    person = get_person_api_model(shares.person)
-    shares_api_model = SharesAPIModel(
-        person=person,
-        percentage=shares.percentage,
-        shares=shares.shares,
-    )
-    return shares_api_model
-
-
 def get_file_api_model(file: File) -> FileAPIModel:
     match file.type:
+        case None:
+            return PVAGAPIModel(
+                name=file.name,
+                id=file.original_id,
+            )
         case FileType.PROCES_VERBAL_D_ASSEMBLEE_GENERALE:
             return PVAGAPIModel(
                 name=file.name,
@@ -93,17 +57,12 @@ def get_file_api_model(file: File) -> FileAPIModel:
                 file_type=file.type,
             )
         case FileType.CONTRAT:
-            contract = file.contracts[0]
             return ContratAPIModel(
                 name=file.name,
                 id=file.original_id,
                 file_type=file.type,
-                offeror=get_person_api_model(contract.offerors[0].person)
-                if contract.offerors
-                else None,
-                offeree=get_person_api_model(contract.offerees[0].person)
-                if contract.offerees
-                else None,
+                offeror=None,
+                offeree=None,
             )
         case FileType.ORDRE_DE_MOUVEMENT_DE_TITRES:
             return OrdreDeMouvementAPIModel(
@@ -113,15 +72,33 @@ def get_file_api_model(file: File) -> FileAPIModel:
             )
 
 
+def get_company_details(company: Company) -> CompanyDetailsAPIModel | None:
+    if (
+        company.details_naf_code is None
+        and company.details_activity is None
+        and company.details_capital is None
+        and company.details_juridic_form is None
+    ):
+        return None
+    return CompanyDetailsAPIModel(
+        siren=company.siren,
+        name=company.name,
+        naf_code=company.details_naf_code or "",
+        activity=company.details_activity or "",
+        capital=company.details_capital,
+        juridic_form=company.details_juridic_form,
+    )
+
+
 def get_company_api_model(company: Company) -> CompanyAPIModel:
     return CompanyAPIModel(
         name=company.name,
         siren=company.siren,
         original_id=company.original_id,
-        roles=[get_role_api_model(role) for role in company.roles],
-        shares=[get_shares_api_model(shares) for shares in company.shares],
+        roles=[],
+        shares=[],
         files=[get_file_api_model(file) for file in company.files],
-        details=company.details,
+        details=get_company_details(company),
     )
 
 
@@ -131,19 +108,17 @@ async def create_company(
     client: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    account = client.account if isinstance(client, User) else client
     new_company = Company(
         name=company.name,
         siren=company.siren,
-        account=account,
+        user=client,
     )
     db.add(new_company)
     db.commit()
     db.refresh(new_company)
     try:
         logger.info(f"Creating company details for company {new_company.original_id}")
-        company_details = create_company_details(new_company)
-        db.add(company_details)
+        create_company_details(new_company, db=db)
         db.commit()
     except Exception as e:
         logger.info(f"Error while creating company details: {e}")
@@ -160,7 +135,11 @@ def get_company(
     user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    company = db.exec(select(Company).where(Company.original_id == company_id)).first()
+    company = db.exec(
+        select(Company).where(
+            Company.original_id == company_id, Company.user_id == user.id
+        )
+    ).first()
     if company is None:
         raise HTTPException(status_code=404, detail="Company not found")
     return get_company_api_model(company)
@@ -170,7 +149,7 @@ def get_company(
 def get_companies(
     user: User = Depends(get_current_user),
 ):
-    return [get_company_api_model(c) for c in user.account.companies]
+    return [get_company_api_model(c) for c in user.companies]
 
 
 @company_router.delete("/company/{company_id}", status_code=204)
@@ -180,7 +159,9 @@ def delete_company(
     db: Session = Depends(get_db),
 ):
     db_company = db.exec(
-        select(Company).where(Company.original_id == company_id)
+        select(Company).where(
+            Company.original_id == company_id, Company.user_id == user.id
+        )
     ).first()
     if db_company is None:
         raise HTTPException(status_code=404, detail="Company not found")
@@ -200,7 +181,11 @@ def update_company(
     user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    db_company = db.query(Company).filter(Company.original_id == company_id).first()
+    db_company = (
+        db.query(Company)
+        .filter(Company.original_id == company_id, Company.user_id == user.id)
+        .first()
+    )
     if db_company is None:
         raise HTTPException(status_code=404, detail="Company not found")
     db_company.name = company.name

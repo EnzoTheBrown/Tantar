@@ -7,12 +7,15 @@ from schemas.file_model import (
     FileTypeModel,
     FileType,
 )
-from schemas.model import (
+from schemas.objects import (
     Event,
     Person,
 )
 from pydantic_ai import Agent
 from datetime import datetime
+from tantar.utils.logger import get_logger
+
+logger = get_logger(__name__)
 
 
 class Context(BaseModel):
@@ -39,12 +42,19 @@ class AgentState(State):
     templating_func: Callable
 
     async def run(self, context):
-        print(f"Running state: {self.name}")
+        logger.info("LLM agent state start name=%s", self.name)
         context.current_step = self.name
 
         prompt, message_history = self.templating_func(context)
+        logger.info(
+            "LLM agent call name=%s prompt_len=%s history_len=%s",
+            self.name,
+            len(str(prompt)),
+            len(message_history) if message_history else 0,
+        )
         llm_result = await self.agent.run(prompt, message_history=message_history)
         data = llm_result.data
+        logger.info("LLM agent done name=%s", self.name)
         context.steps[self.name] = data
         if self.lambda_func:
             self.lambda_func(context)
